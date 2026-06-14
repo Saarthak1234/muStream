@@ -32,5 +32,9 @@ contextBridge.exposeInMainWorld('api', {
   onTrackError: (callback) => ipcRenderer.on('track-error', callback),
   onPlaybackTime: (callback) => ipcRenderer.on('playback-time', callback),
   onPlaybackStopped: (callback) => ipcRenderer.on('playback-stopped', callback),
-  onPlaybackStateUpdate: (callback) => ipcRenderer.on('playback-state-update', callback)
+  onPlaybackStateUpdate: (callback) => ipcRenderer.on('playback-state-update', callback),
+  openGifWindow: () => ipcRenderer.invoke('open-gif-window'),
+  selectGif: (gifUrl, gifName) => ipcRenderer.invoke('select-gif', gifUrl, gifName),
+  onGifSelected: (callback) => ipcRenderer.on('gif-selected', callback),
+  updateGlobalShortcut: (shortcut) => ipcRenderer.invoke('update-global-shortcut', shortcut)
 })

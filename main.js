@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
@@ -19,6 +19,8 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 let mainWindow
+let credsWindow = null
+let gifWindow = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -51,6 +53,30 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow()
+
+  let currentGlobalShortcut = null;
+  ipcMain.handle('update-global-shortcut', (event, newShortcut) => {
+    if (currentGlobalShortcut) {
+      globalShortcut.unregister(currentGlobalShortcut);
+    }
+    currentGlobalShortcut = newShortcut;
+    if (newShortcut) {
+      try {
+        globalShortcut.register(newShortcut, () => {
+          if (mainWindow) {
+            if (mainWindow.isVisible() && mainWindow.isFocused()) {
+              mainWindow.minimize()
+            } else {
+              mainWindow.show()
+              mainWindow.focus()
+            }
+          } else {
+            createWindow()
+          }
+        })
+      } catch(e) {}
+    }
+  });
 
   // Debug: Listen to MPV's native timeposition event (this often fails for streams)
   mpv.on('timeposition', (time) => {
@@ -115,7 +141,6 @@ ipcMain.handle('minimize-app', () => {
   if (mainWindow) mainWindow.minimize()
 })
 
-let credsWindow
 ipcMain.handle('open-credentials-window', () => {
   if (credsWindow) {
     credsWindow.focus()
@@ -181,7 +206,38 @@ ipcMain.handle('load-custom-themes', () => {
 })
 
 ipcMain.handle('get-spotify-creds', () => getAppCredentials())
-ipcMain.handle('close-credentials-window', () => { if (credsWindow) credsWindow.close() })
+ipcMain.handle('close-credentials-window', () => {
+  if (credsWindow) credsWindow.close()
+})
+
+ipcMain.handle('open-gif-window', () => {
+  if (gifWindow) {
+    gifWindow.focus()
+    return
+  }
+  gifWindow = new BrowserWindow({
+    width: 440,
+    height: 480,
+    frame: false,
+    transparent: true,
+    vibrancy: 'fullscreen-ui',
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+  gifWindow.loadFile(path.join(__dirname, 'ui/gif-picker.html'))
+  gifWindow.on('closed', () => gifWindow = null)
+})
+
+ipcMain.handle('select-gif', (event, url, name) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('gif-selected', { url, name })
+  }
+})
+
 ipcMain.handle('is-logged-in', () => isLoggedIn())
 
 import { getStreamData } from './src/youtube.js'

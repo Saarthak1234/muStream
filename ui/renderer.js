@@ -544,11 +544,121 @@ function toggleSearch() {
   }
 }
 
+// Shortcuts Manager
+let appShortcuts = JSON.parse(localStorage.getItem('appShortcuts')) || {
+  globalToggle: 'CommandOrControl+Shift+M',
+  search: 'CommandOrControl+F',
+  gifPicker: 'CommandOrControl+G'
+};
+
+// Upgrade old single-letter shortcuts from previous version
+if (appShortcuts.search === 'f' || appShortcuts.search === 'F') appShortcuts.search = 'CommandOrControl+F';
+if (appShortcuts.gifPicker === 'g' || appShortcuts.gifPicker === 'G') appShortcuts.gifPicker = 'CommandOrControl+G';
+
+window.api.updateGlobalShortcut(appShortcuts.globalToggle);
+
+const inputs = {
+  globalToggle: document.getElementById('shortcut-global'),
+  search: document.getElementById('shortcut-search'),
+  gifPicker: document.getElementById('shortcut-gif')
+};
+
+function formatDisplay(electronShortcut) {
+  if (!electronShortcut) return '';
+  return electronShortcut
+    .replace(/CommandOrControl/g, '⌘')
+    .replace(/Command/g, '⌘')
+    .replace(/Control/g, '⌃')
+    .replace(/Shift/g, '⇧')
+    .replace(/Alt/g, '⌥')
+    .replace(/\+/g, '')
+    .toUpperCase();
+}
+
+function updateInputs() {
+  if (inputs.globalToggle) inputs.globalToggle.value = formatDisplay(appShortcuts.globalToggle);
+  if (inputs.search) inputs.search.value = formatDisplay(appShortcuts.search);
+  if (inputs.gifPicker) inputs.gifPicker.value = formatDisplay(appShortcuts.gifPicker);
+}
+updateInputs();
+
+function handleShortcutRecord(e, keyName) {
+  e.preventDefault();
+  if (e.key === 'Escape') {
+    e.target.blur();
+    return;
+  }
+  
+  const keys = [];
+  if (e.metaKey || e.ctrlKey) keys.push('CommandOrControl');
+  if (e.shiftKey) keys.push('Shift');
+  if (e.altKey) keys.push('Alt');
+  
+  const isModifier = ['Meta', 'Control', 'Shift', 'Alt'].includes(e.key);
+  
+  if (!isModifier) {
+    keys.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
+    const newShortcut = keys.join('+');
+    appShortcuts[keyName] = newShortcut;
+    localStorage.setItem('appShortcuts', JSON.stringify(appShortcuts));
+    
+    if (keyName === 'globalToggle') {
+      window.api.updateGlobalShortcut(newShortcut);
+    }
+    
+    updateInputs();
+    e.target.blur();
+  } else {
+    e.target.value = formatDisplay(keys.join('+')) + '...';
+  }
+}
+
+if (inputs.globalToggle) inputs.globalToggle.addEventListener('keydown', (e) => handleShortcutRecord(e, 'globalToggle'));
+if (inputs.search) inputs.search.addEventListener('keydown', (e) => handleShortcutRecord(e, 'search'));
+if (inputs.gifPicker) inputs.gifPicker.addEventListener('keydown', (e) => handleShortcutRecord(e, 'gifPicker'));
+
 searchBtn.addEventListener('click', toggleSearch)
 
 window.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-    toggleSearch()
+  if (e.key === 'Escape') {
+    if (document.getElementById('settings-modal').style.display === 'flex') {
+      document.getElementById('settings-modal').style.display = 'none';
+    } else if (searchContainer.classList.contains('expanded')) {
+      toggleSearch();
+    } else {
+      window.api.close();
+    }
+  }
+  
+  // Only trigger custom shortcuts if the user isn't typing in an input
+  if (!e.target.classList.contains('shortcut-recorder') && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    const pressedKey = e.key.toUpperCase();
+    const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+    
+    const checkMatch = (shortcutConfig) => {
+      if (!shortcutConfig) return false;
+      const parts = shortcutConfig.split('+');
+      const requiresCmd = parts.includes('CommandOrControl') || parts.includes('Command') || parts.includes('Control');
+      const requiresShift = parts.includes('Shift');
+      const requiresAlt = parts.includes('Alt');
+      const letter = parts[parts.length - 1].toUpperCase();
+      
+      return (
+        isCmdOrCtrl === requiresCmd &&
+        e.shiftKey === requiresShift &&
+        e.altKey === requiresAlt &&
+        pressedKey === letter
+      );
+    };
+
+    if (checkMatch(appShortcuts.search)) {
+      e.preventDefault();
+      toggleSearch();
+    }
+    if (checkMatch(appShortcuts.gifPicker)) {
+      e.preventDefault();
+      window.api.openGifWindow();
+    }
   }
 })
 
@@ -1009,12 +1119,24 @@ const defaultCdSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000
 const customGifDetails = document.getElementById('custom-gif-details');
 const customGifNameInput = document.getElementById('custom-gif-name');
 const btnSaveGif = document.getElementById('btn-save-gif');
-const savedGifsGrid = document.getElementById('saved-gifs-grid');
 
 let savedCustomGifs = JSON.parse(localStorage.getItem('savedCustomGifs')) || [];
 
-function renderSavedGifs() {
-  savedGifsGrid.innerHTML = '';
+// Cleanup previously injected default GIFs
+const defaultUrls = [
+  'https://i.pinimg.com/originals/f6/75/cd/f675cd00632cd2ce6fc9526715f606a2.gif',
+  'https://media.tenor.com/71G1f6Jb5S0AAAAC/cyberpunk-pixel-art.gif',
+  'https://i.pinimg.com/originals/17/5c/49/175c4943dc4f3317dd4daab0e2bce430.gif',
+  'https://i.pinimg.com/originals/5c/d5/43/5cd5432d665a399cebc57ed92fc63cf6.gif'
+];
+savedCustomGifs = savedCustomGifs.filter(gif => !defaultUrls.includes(gif.url));
+localStorage.setItem('savedCustomGifs', JSON.stringify(savedCustomGifs));
+
+function renderSavedGifsGrid() {
+  const grid1 = document.getElementById('saved-gifs-grid');
+  if (!grid1) return;
+  grid1.innerHTML = '';
+  
   savedCustomGifs.forEach((gif, index) => {
     const isActive = customGifSettings.url === gif.url;
     const card = document.createElement('div');
@@ -1036,33 +1158,39 @@ function renderSavedGifs() {
       customGifSettings.url = gif.url;
       localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
       applyCustomGifSettings();
-      renderSavedGifs();
+      renderSavedGifsGrid();
     };
     
     card.querySelector('.delete-gif-btn').onclick = (e) => {
       e.stopPropagation();
       savedCustomGifs.splice(index, 1);
       localStorage.setItem('savedCustomGifs', JSON.stringify(savedCustomGifs));
-      renderSavedGifs();
+      renderSavedGifsGrid();
     };
     
-    savedGifsGrid.appendChild(card);
+    grid1.appendChild(card);
   });
 }
 
 const customGifOverlay = document.querySelector('.custom-gif-overlay');
 const customGifWrapper = document.querySelector('.custom-gif-wrapper');
 
-if (customGifWrapper) {
-  customGifWrapper.addEventListener('click', () => {
-    const settingsModal = document.getElementById('settings-modal');
-    settingsModal.style.display = 'flex';
-    setTimeout(() => {
-      const box = document.querySelector('.custom-gif-box');
-      if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-  });
-}
+document.getElementById('btn-open-gif-picker').addEventListener('click', () => {
+  window.api.openGifWindow();
+});
+
+window.api.onGifSelected((_, gif) => {
+  customGifSettings.url = gif.url;
+  customGifSettings.enabled = true;
+  toggleCustomGif.checked = true;
+  localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+  
+  // Refresh the saved gifs in case new ones were added in the external window
+  savedCustomGifs = JSON.parse(localStorage.getItem('savedCustomGifs')) || [];
+  
+  applyCustomGifSettings();
+  renderSavedGifsGrid();
+});
 
 function applyCustomGifSettings() {
   customGifImg.style.display = 'block';
@@ -1116,7 +1244,7 @@ toggleCustomGif.addEventListener('change', (e) => {
   if (!customGifSettings.url) customGifSettings.url = 'https://media.tenor.com/3_L-B_yvLuwAAAAi/run-mario.gif';
   localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
   applyCustomGifSettings();
-  if (customGifSettings.enabled) renderSavedGifs();
+  if (customGifSettings.enabled) renderSavedGifsGrid();
 });
 
 if (toggleGifBg) {
@@ -1226,11 +1354,12 @@ btnSaveGif.addEventListener('click', () => {
     localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
     
     customGifNameInput.value = '';
+    customGifUrlInput.value = '';
     applyCustomGifSettings();
-    renderSavedGifs();
+    renderSavedGifsGrid();
   }
 });
 
 // Initial Render
 applyCustomGifSettings();
-if (customGifSettings.enabled) renderSavedGifs();
+if (customGifSettings.enabled) renderSavedGifsGrid();
