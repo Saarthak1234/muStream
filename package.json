@@ -2,6 +2,7 @@
   "name": "mustream",
   "version": "1.1.0",
   "description": "A beautiful Electron Desktop application to stream your Spotify playlists completely free via YouTube audio",
+  "repository": "Saarthak1234/muStream",
   "type": "module",
   "bin": {
     "mustream": "./bin/musync.js"
@@ -11,8 +12,12 @@
     "start": "node bin/musync.js",
     "dev": "node --watch bin/musync.js",
     "start:electron": "electron .",
-    "build": "bun build ./bin/musync.js --compile --outfile dist/mustream",
-    "build:all": "bun build ./bin/musync.js --compile --target bun-darwin-x64 --outfile dist/mustream-mac-intel && bun build ./bin/musync.js --compile --target bun-darwin-arm64 --outfile dist/mustream-mac-arm && bun build ./bin/musync.js --compile --target bun-windows-x64 --outfile dist/mustream-windows.exe && bun build ./bin/musync.js --compile --target bun-linux-x64 --outfile dist/mustream-linux"
+    "build:cli": "bun build ./bin/musync.js --compile --outfile dist/mustream",
+    "build:cli:all": "bun build ./bin/musync.js --compile --target bun-darwin-x64 --outfile dist/mustream-mac-intel && bun build ./bin/musync.js --compile --target bun-darwin-arm64 --outfile dist/mustream-mac-arm && bun build ./bin/musync.js --compile --target bun-windows-x64 --outfile dist/mustream-windows.exe && bun build ./bin/musync.js --compile --target bun-linux-x64 --outfile dist/mustream-linux",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:app:all": "electron-builder -mwl"
   },
   "dependencies": {
     "blessed": "^0.1.81",
@@ -21,6 +26,7 @@
     "conf": "^13.0.0",
     "dotenv": "^16.4.0",
     "figlet": "^1.11.0",
+    "fix-path": "^5.0.0",
     "inquirer": "^9.2.0",
     "inquirer-autocomplete-prompt": "^3.0.1",
     "neo-blessed": "^0.2.0",
@@ -34,6 +40,44 @@
     "yt-dlp-wrap": "^2.3.12"
   },
   "devDependencies": {
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.mustream.desktop",
+    "productName": "muStream",
+    "directories": {
+      "output": "dist_app"
+    },
+    "publish": [
+      "github"
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Audio"
+    }
   }
 }

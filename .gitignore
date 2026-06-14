@@ -118,3 +118,5 @@ release/
 *.rpm
 *.zip
 *.tar.gz
+
+dist_app/

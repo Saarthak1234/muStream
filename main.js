@@ -1,4 +1,8 @@
 import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron'
+import fixPath from 'fix-path'
+
+// Fix the $PATH on macOS when run from a GUI app so it can find Homebrew bins like mpv
+fixPath()
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
