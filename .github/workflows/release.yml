@@ -18,10 +18,10 @@ jobs:
         include:
           - os: macos-latest
             build_cmd: npm run build:mac
-            artifact_glob: "dist_app/*.dmg dist_app/*.zip"
+            artifact_glob: "dist_app/*.dmg\ndist_app/*.zip"
           - os: ubuntu-latest
             build_cmd: npm run build:linux
-            artifact_glob: "dist_app/*.AppImage dist_app/*.deb"
+            artifact_glob: "dist_app/*.AppImage\ndist_app/*.deb"
           - os: windows-latest
             build_cmd: npm run build:win
             artifact_glob: "dist_app/*.exe"
@@ -39,13 +39,25 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3 libudev-dev
+          sudo apt-get install -y build-essential python3 libudev-dev libsecret-1-dev
+
+      - name: Install Windows Build Dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          npm install --global windows-build-tools --vs2019 || true
+        shell: pwsh
 
       - name: Install Dependencies
         run: npm install
 
+      - name: Rebuild native modules for Electron
+        run: npx @electron/rebuild
+        shell: bash
+
       - name: Build App
         run: ${{ matrix.build_cmd }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
 
       - name: Upload Release Assets
