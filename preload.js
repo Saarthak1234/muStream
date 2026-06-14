@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('api', {
   close: () => ipcRenderer.invoke('close-app'),
   minimize: () => ipcRenderer.invoke('minimize-app'),
+  saveCustomTheme: (theme) => ipcRenderer.invoke('save-custom-theme', theme),
+  deleteCustomTheme: (themeName) => ipcRenderer.invoke('delete-custom-theme', themeName),
+  loadCustomThemes: () => ipcRenderer.invoke('load-custom-themes'),
   searchSong: (query) => ipcRenderer.invoke('search-song', query),
   openCredentialsWindow: () => ipcRenderer.invoke('open-credentials-window'),
   closeCredentialsWindow: () => ipcRenderer.invoke('close-credentials-window'),

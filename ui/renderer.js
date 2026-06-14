@@ -157,6 +157,7 @@ document.getElementById('btn-loop').addEventListener('click', async () => {
 document.getElementById('btn-shuffle').addEventListener('click', async () => {
   const shuffling = await window.api.toggleShuffle()
   document.getElementById('btn-shuffle').style.color = shuffling ? 'var(--accent)' : 'var(--text-muted)'
+  renderQueue()
 })
 
 // Open Settings
@@ -195,8 +196,8 @@ document.getElementById('btn-playlist').addEventListener('click', async (e) => {
       searchInput.placeholder = 'Search playlists...'
       searchInput.style.width = '100%'
       searchInput.style.background = 'transparent'
-      searchInput.style.border = '1px solid rgba(255,255,255,0.2)'
-      searchInput.style.color = 'white'
+      searchInput.style.border = '1px solid var(--border-color)'
+      searchInput.style.color = 'var(--text-main)'
       searchInput.style.padding = '4px'
       searchInput.style.fontSize = '11px'
       searchInput.style.borderRadius = '4px'
@@ -216,7 +217,7 @@ document.getElementById('btn-playlist').addEventListener('click', async (e) => {
       urlBtn.href = '#'
       urlBtn.className = 'track-item'
       urlBtn.style.display = 'block'
-      urlBtn.style.color = '#39ff14'
+      urlBtn.style.color = 'var(--accent)'
       urlBtn.style.textDecoration = 'none'
       urlBtn.style.borderRadius = '4px'
       urlBtn.style.marginBottom = '4px'
@@ -238,8 +239,8 @@ document.getElementById('btn-playlist').addEventListener('click', async (e) => {
       input.placeholder = 'https://open.spotify.com/playlist/...'
       input.style.flex = '1'
       input.style.background = 'transparent'
-      input.style.border = '1px solid rgba(255,255,255,0.2)'
-      input.style.color = 'white'
+      input.style.border = '1px solid var(--border-color)'
+      input.style.color = 'var(--text-main)'
       input.style.padding = '4px'
       input.style.fontSize = '11px'
       input.style.borderRadius = '4px'
@@ -410,7 +411,8 @@ function renderSidebarTracks(tracks) {
     d.ondblclick = (ev) => {
       ev.preventDefault();
       
-      const query = `${t.name} ${t.artist}`;
+      const query = `${t.name} by ${t.artist}`;
+      console.log(query)
       window.api.searchSong(query);
       
       if (!isQueueMode) {
@@ -552,16 +554,17 @@ window.addEventListener('keydown', (e) => {
 
 searchInput.addEventListener('keydown', async (e) => {
   if (e.key === 'Enter') {
-    const query = e.target.value
+    const query = e.target.value.trim()
     if (query) {
       e.target.value = ''
-      searchInput.style.display = 'none'
+      searchContainer.classList.remove('expanded')
+      searchInput.blur()
       
       if (!isQueueMode) {
-        window.api.addQueue(query)
-        document.getElementById('track-artist').innerText = `Queued: ${query}`
-      } else {
         window.api.searchSong(query)
+      } else {
+        window.api.addQueue(query)
+        // Add silently to prevent overwriting the currently playing track info
       }
     }
   }
@@ -584,8 +587,8 @@ window.api.onPlaybackStateUpdate((event, isPaused) => {
 window.api.isLoggedIn().then(loggedIn => {
   const btn = document.getElementById('btn-auth-top')
   if (loggedIn) {
-    btn.innerHTML = 'Connected <span style="display:inline-block; width:6px; height:6px; background:#000; border-radius:50%; margin-left:4px; vertical-align:middle;"></span>'
-    btn.style.color = '#000'
+    btn.innerHTML = 'Connected <span style="display:inline-block; width:6px; height:6px; background:rgb(var(--bg-color-rgb)); border-radius:50%; margin-left:4px; vertical-align:middle;"></span>'
+    btn.style.color = 'rgb(var(--bg-color-rgb))'
     btn.style.background = 'var(--accent)'
     btn.style.border = 'none'
     btn.style.fontWeight = '600'
@@ -610,11 +613,33 @@ window.api.onTrackError((event, errorMsg) => {
 const root = document.documentElement
 const opacitySlider = document.getElementById('opacity-slider')
 const opacityValue = document.getElementById('opacity-value')
+const brightnessSlider = document.getElementById('brightness-slider')
+const brightnessValue = document.getElementById('brightness-value')
+
+// Load saved settings
+const savedOpacity = Math.max(40, parseInt(localStorage.getItem('bgOpacity')) || 95)
+const savedBrightness = Math.min(100, Math.max(0, parseInt(localStorage.getItem('bgBrightness')) || 80))
+
+opacitySlider.value = savedOpacity
+opacityValue.innerText = savedOpacity + '%'
+root.style.setProperty('--bg-opacity', savedOpacity / 100)
+
+brightnessSlider.value = savedBrightness
+brightnessValue.innerText = savedBrightness + '%'
+root.style.setProperty('--bg-brightness', savedBrightness / 100)
 
 opacitySlider.addEventListener('input', (e) => {
   const val = e.target.value
   opacityValue.innerText = val + '%'
   root.style.setProperty('--bg-opacity', val / 100)
+  localStorage.setItem('bgOpacity', val)
+})
+
+brightnessSlider.addEventListener('input', (e) => {
+  const val = e.target.value
+  brightnessValue.innerText = val + '%'
+  root.style.setProperty('--bg-brightness', val / 100)
+  localStorage.setItem('bgBrightness', val)
 })
 
 document.querySelectorAll('.theme-card').forEach(card => {
@@ -763,3 +788,449 @@ window.addEventListener('mouseup', (e) => {
     }
   }
 })
+
+// --- Custom Theme Builder Logic ---
+
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? 
+    `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '25, 25, 25';
+}
+
+let currentThemeBg = '#0f0f0f'
+let currentThemeText = '#ffffff'
+let currentThemeAccent = '#39ff14'
+
+let activeColorTarget = null;
+const colorWheelPopover = document.getElementById('color-wheel-popover');
+let colorPicker = null;
+
+const themeName = document.getElementById('custom-theme-name')
+const saveThemeBtn = document.getElementById('btn-save-theme')
+
+function updateLivePreview() {
+  const bgRgb = hexToRgb(currentThemeBg)
+  const textRgb = hexToRgb(currentThemeText)
+  
+  document.documentElement.style.setProperty('--bg-color-rgb', bgRgb)
+  document.documentElement.style.setProperty('--accent', currentThemeAccent)
+  document.documentElement.style.setProperty('--text-main', `rgb(${textRgb})`)
+}
+
+document.querySelectorAll('.color-pill').forEach(pill => {
+  pill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    activeColorTarget = pill.getAttribute('data-target');
+    
+    let initialColor = '#ffffff';
+    if (activeColorTarget === 'bg') initialColor = currentThemeBg;
+    else if (activeColorTarget === 'text') initialColor = currentThemeText;
+    else if (activeColorTarget === 'accent') initialColor = currentThemeAccent;
+    
+    colorWheelPopover.style.display = 'block';
+    
+    const rect = pill.getBoundingClientRect();
+    const parentRect = pill.parentElement.getBoundingClientRect();
+    colorWheelPopover.style.top = `${rect.bottom - parentRect.top + 8}px`;
+    colorWheelPopover.style.left = `${rect.left - parentRect.left}px`;
+
+    if (!colorPicker) {
+      colorPicker = new iro.ColorPicker('#color-wheel-container', {
+        width: 160,
+        color: initialColor,
+        borderWidth: 1,
+        borderColor: "#333",
+        layout: [
+          { component: iro.ui.Wheel },
+          { component: iro.ui.Slider, options: { sliderType: 'value' } }
+        ]
+      });
+      
+      colorPicker.on('color:change', function(color) {
+        const hex = color.hexString;
+        if (activeColorTarget === 'bg') {
+          currentThemeBg = hex;
+          document.getElementById('swatch-bg').style.background = hex;
+        } else if (activeColorTarget === 'text') {
+          currentThemeText = hex;
+          document.getElementById('swatch-text').style.background = hex;
+        } else if (activeColorTarget === 'accent') {
+          currentThemeAccent = hex;
+          document.getElementById('swatch-accent').style.background = hex;
+        }
+        updateLivePreview();
+      });
+    } else {
+      colorPicker.color.hexString = initialColor;
+    }
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (colorWheelPopover && colorWheelPopover.style.display === 'block') {
+    if (!colorWheelPopover.contains(e.target)) {
+      colorWheelPopover.style.display = 'none';
+      activeColorTarget = null;
+    }
+  }
+});
+
+const btnShowBuilder = document.getElementById('btn-show-builder')
+const btnCancelTheme = document.getElementById('btn-cancel-theme')
+const themeBuilderEntry = document.getElementById('theme-builder-entry')
+const themeBuilderForm = document.getElementById('theme-builder-form')
+
+btnShowBuilder.addEventListener('click', () => {
+  themeBuilderEntry.style.display = 'none'
+  themeBuilderForm.style.display = 'block'
+})
+
+btnCancelTheme.addEventListener('click', () => {
+  themeBuilderForm.style.display = 'none'
+  themeBuilderEntry.style.display = 'flex'
+})
+
+function injectThemeCard(theme, isCustom = false) {
+  const grid = document.querySelector('.theme-grid')
+  const card = document.createElement('div')
+  card.className = 'theme-card'
+  card.setAttribute('data-color', theme.color)
+  card.setAttribute('data-text', theme.text)
+  card.setAttribute('data-accent', theme.accent)
+  card.setAttribute('data-border', theme.border || 'rgba(255, 255, 255, 0.08)')
+  
+  let deleteBtnHtml = ''
+  if (isCustom) {
+    deleteBtnHtml = `<button class="delete-theme-btn" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.5); border: none; color: #ff5f56; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; display: none;">&times;</button>`
+  }
+  
+  card.innerHTML = `
+    <div class="theme-preview" style="background: rgb(${theme.color}); border: 1px solid ${theme.border || '#222'}; position: relative;">
+      ${deleteBtnHtml}
+      <div class="p-dot" style="background: ${theme.accent};"></div><div class="p-line" style="background: rgba(${theme.text}, 0.2);"></div>
+    </div>
+    <div class="theme-info"><span style="color: rgb(${theme.text})">${theme.name}</span><span class="badge" style="background: ${theme.accent}; color: #000;">USER</span></div>
+  `
+  
+  if (isCustom) {
+    card.addEventListener('mouseenter', () => {
+      card.querySelector('.delete-theme-btn').style.display = 'block'
+    })
+    card.addEventListener('mouseleave', () => {
+      card.querySelector('.delete-theme-btn').style.display = 'none'
+    })
+    card.querySelector('.delete-theme-btn').addEventListener('click', async (e) => {
+      e.stopPropagation()
+      await window.api.deleteCustomTheme(theme.name)
+      card.remove()
+      // If deleted theme was active, fallback to first theme
+      if (card.classList.contains('active')) {
+        document.querySelector('.theme-card').click()
+      }
+    })
+  }
+  
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'))
+    card.classList.add('active')
+    document.documentElement.style.setProperty('--bg-color-rgb', theme.color)
+    document.documentElement.style.setProperty('--accent', theme.accent)
+    document.documentElement.style.setProperty('--text-main', `rgb(${theme.text})`)
+    document.documentElement.style.setProperty('--text-muted', `rgba(${theme.text}, 0.5)`)
+    document.documentElement.style.setProperty('--border-color', theme.border || 'rgba(255, 255, 255, 0.08)')
+    localStorage.setItem('activeThemeName', theme.name)
+    broadcastThemeVars()
+    if (theme.name.startsWith('GIF Adaptive')) updateGifAdaptiveTheme();
+  })
+  
+  grid.appendChild(card)
+}
+
+// Inject Adaptive Themes
+injectThemeCard({
+  name: 'GIF Adaptive (Dark)',
+  color: '20, 20, 20',
+  text: '255, 255, 255',
+  accent: '#4ade80',
+  border: 'rgba(255, 255, 255, 0.2)'
+}, false)
+
+injectThemeCard({
+  name: 'GIF Adaptive (Light)',
+  color: '240, 240, 240',
+  text: '20, 20, 20',
+  accent: '#4ade80',
+  border: 'rgba(0, 0, 0, 0.1)'
+}, false)
+
+saveThemeBtn.addEventListener('click', async () => {
+  const name = themeName.value.trim() || 'Custom Theme'
+  const newTheme = {
+    name,
+    color: hexToRgb(currentThemeBg),
+    text: hexToRgb(currentThemeText),
+    accent: currentThemeAccent,
+    border: 'rgba(255, 255, 255, 0.08)'
+  }
+  
+  await window.api.saveCustomTheme(newTheme)
+  injectThemeCard(newTheme, true)
+  
+  themeName.value = ''
+  themeBuilderForm.style.display = 'none'
+  themeBuilderEntry.style.display = 'flex'
+  
+  // Auto select the new theme
+  const allCards = document.querySelectorAll('.theme-card')
+  if (allCards.length > 0) {
+    allCards[allCards.length - 1].click()
+  }
+})
+
+// Load saved custom themes on startup
+window.api.loadCustomThemes().then(themes => {
+  themes.forEach(theme => injectThemeCard(theme, true))
+})
+
+// Custom GIF Settings Logic
+const toggleCustomGif = document.getElementById('toggle-custom-gif');
+const toggleGifBg = document.getElementById('toggle-gif-bg');
+const customGifUrlInput = document.getElementById('custom-gif-url');
+const customGifImg = document.getElementById('custom-gif-img');
+
+let customGifSettings = JSON.parse(localStorage.getItem('customGifSettings')) || {
+  enabled: false,
+  showBackground: false,
+  url: 'https://media.tenor.com/3_L-B_yvLuwAAAAi/run-mario.gif'
+};
+
+const defaultCdSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="%23181818" /><circle cx="50" cy="50" r="40" fill="none" stroke="%232a2a2a" stroke-width="2" /><circle cx="50" cy="50" r="32" fill="none" stroke="%232a2a2a" stroke-width="2" /><circle cx="50" cy="50" r="24" fill="none" stroke="%232a2a2a" stroke-width="2" /><circle cx="50" cy="50" r="16" fill="%23111" /><circle cx="50" cy="50" r="5" fill="%23333" /><path d="M50 2 A48 48 0 0 1 85 16 L50 50 Z" fill="rgba(255,255,255,0.05)" /><path d="M50 98 A48 48 0 0 1 15 84 L50 50 Z" fill="rgba(255,255,255,0.05)" /></svg>';
+
+const customGifDetails = document.getElementById('custom-gif-details');
+const customGifNameInput = document.getElementById('custom-gif-name');
+const btnSaveGif = document.getElementById('btn-save-gif');
+const savedGifsGrid = document.getElementById('saved-gifs-grid');
+
+let savedCustomGifs = JSON.parse(localStorage.getItem('savedCustomGifs')) || [];
+
+function renderSavedGifs() {
+  savedGifsGrid.innerHTML = '';
+  savedCustomGifs.forEach((gif, index) => {
+    const isActive = customGifSettings.url === gif.url;
+    const card = document.createElement('div');
+    card.className = `gif-card ${isActive ? 'active' : ''}`;
+    card.innerHTML = `
+      <div class="gif-preview">
+        <img src="${gif.url}" style="width: 100%; height: auto; display: block;" />
+        <div class="gif-select-box" style="position: absolute; top: 6px; left: 6px; width: 14px; height: 14px; border-radius: 3px; border: 2px solid ${isActive ? '#4ade80' : 'rgba(255,255,255,0.4)'}; background: ${isActive ? '#4ade80' : 'rgba(0,0,0,0.5)'}; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 2;">
+          ${isActive ? '<svg viewBox="0 0 24 24" width="10" height="10" fill="#000"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>' : ''}
+        </div>
+      </div>
+      <div class="gif-info">
+        <span style="font-weight: 500; color: var(--text-main);">${gif.name}</span>
+        <button class="icon-btn delete-gif-btn" style="color: #e06c75; font-size: 10px; padding: 2px;">✕</button>
+      </div>
+    `;
+    
+    card.onclick = () => {
+      customGifSettings.url = gif.url;
+      localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+      applyCustomGifSettings();
+      renderSavedGifs();
+    };
+    
+    card.querySelector('.delete-gif-btn').onclick = (e) => {
+      e.stopPropagation();
+      savedCustomGifs.splice(index, 1);
+      localStorage.setItem('savedCustomGifs', JSON.stringify(savedCustomGifs));
+      renderSavedGifs();
+    };
+    
+    savedGifsGrid.appendChild(card);
+  });
+}
+
+const customGifOverlay = document.querySelector('.custom-gif-overlay');
+const customGifWrapper = document.querySelector('.custom-gif-wrapper');
+
+if (customGifWrapper) {
+  customGifWrapper.addEventListener('click', () => {
+    const settingsModal = document.getElementById('settings-modal');
+    settingsModal.style.display = 'flex';
+    setTimeout(() => {
+      const box = document.querySelector('.custom-gif-box');
+      if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  });
+}
+
+function applyCustomGifSettings() {
+  customGifImg.style.display = 'block';
+  
+  if (customGifSettings.enabled) {
+    toggleCustomGif.checked = true;
+    if (toggleGifBg) toggleGifBg.checked = !!customGifSettings.showBackground;
+    customGifDetails.style.display = 'block';
+    customGifUrlInput.value = customGifSettings.url;
+    customGifImg.src = customGifSettings.url;
+    customGifImg.classList.remove('spin-cd');
+    if (customGifOverlay) customGifOverlay.style.borderRadius = '8px';
+
+    if (customGifSettings.showBackground) {
+      document.body.style.backgroundImage = `url('${customGifSettings.url}')`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
+      root.style.setProperty('--bg-blur', '0px');
+      document.getElementById('brightness-setting-container').style.display = 'flex';
+      opacitySlider.min = 70;
+      if (parseInt(opacitySlider.value) < 70) {
+        opacitySlider.value = 70;
+        opacityValue.innerText = '70%';
+        root.style.setProperty('--bg-opacity', 0.7);
+        localStorage.setItem('bgOpacity', 70);
+      }
+    } else {
+      document.body.style.backgroundImage = 'none';
+      root.style.setProperty('--bg-blur', '25px');
+      root.style.setProperty('--bg-brightness', '1');
+      document.getElementById('brightness-setting-container').style.display = 'none';
+      opacitySlider.min = 40;
+    }
+  } else {
+    toggleCustomGif.checked = false;
+    customGifDetails.style.display = 'none';
+    customGifImg.src = defaultCdSvg;
+    customGifImg.classList.add('spin-cd');
+    if (customGifOverlay) customGifOverlay.style.borderRadius = '50%';
+    document.body.style.backgroundImage = 'none';
+    root.style.setProperty('--bg-blur', '25px');
+    root.style.setProperty('--bg-brightness', '1');
+    document.getElementById('brightness-setting-container').style.display = 'none';
+    opacitySlider.min = 40;
+  }
+  updateGifAdaptiveTheme();
+}
+
+toggleCustomGif.addEventListener('change', (e) => {
+  customGifSettings.enabled = e.target.checked;
+  if (!customGifSettings.url) customGifSettings.url = 'https://media.tenor.com/3_L-B_yvLuwAAAAi/run-mario.gif';
+  localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+  applyCustomGifSettings();
+  if (customGifSettings.enabled) renderSavedGifs();
+});
+
+if (toggleGifBg) {
+  toggleGifBg.addEventListener('change', (e) => {
+    customGifSettings.showBackground = e.target.checked;
+    localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+    applyCustomGifSettings();
+  });
+}
+
+customGifUrlInput.addEventListener('input', (e) => {
+  customGifSettings.url = e.target.value.trim();
+  localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+  applyCustomGifSettings();
+});
+
+function extractDominantColor(imgEl) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = imgEl.naturalWidth || 50;
+  canvas.height = imgEl.naturalHeight || 50;
+  if(canvas.width === 0 || canvas.height === 0) return null;
+  ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+  try {
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let r = 0, g = 0, b = 0, count = 0;
+    for (let i = 0; i < data.length; i += 16) {
+      if (data[i+3] > 128) {
+        r += data[i];
+        g += data[i+1];
+        b += data[i+2];
+        count++;
+      }
+    }
+    if (count === 0) return null;
+    return { r: Math.floor(r/count), g: Math.floor(g/count), b: Math.floor(b/count) };
+  } catch (e) {
+    return null;
+  }
+}
+
+function updateGifAdaptiveTheme() {
+  const activeThemeName = localStorage.getItem('activeThemeName');
+  if (!activeThemeName || !activeThemeName.startsWith('GIF Adaptive')) return;
+
+  const color = extractDominantColor(customGifImg);
+  if (!color) return;
+
+  const { r, g, b } = color;
+  
+  if (activeThemeName === 'GIF Adaptive (Dark)') {
+    const bgR = Math.floor(r * 0.15);
+    const bgG = Math.floor(g * 0.15);
+    const bgB = Math.floor(b * 0.15);
+    
+    document.documentElement.style.setProperty('--bg-color-rgb', `${bgR}, ${bgG}, ${bgB}`);
+    document.documentElement.style.setProperty('--accent', `rgb(${r}, ${g}, ${b})`);
+    document.documentElement.style.setProperty('--text-main', `rgb(255, 255, 255)`);
+    document.documentElement.style.setProperty('--text-muted', `rgba(255, 255, 255, 0.5)`);
+    document.documentElement.style.setProperty('--border-color', `rgba(${r}, ${g}, ${b}, 0.2)`);
+  } else {
+    // Light Mode
+    const bgR = Math.floor(r + (255 - r) * 0.92);
+    const bgG = Math.floor(g + (255 - g) * 0.92);
+    const bgB = Math.floor(b + (255 - b) * 0.92);
+    
+    // Very dark text based on the dominant color
+    const textR = Math.floor(r * 0.15);
+    const textG = Math.floor(g * 0.15);
+    const textB = Math.floor(b * 0.15);
+    
+    // Accent can be a slightly darkened version of the dominant color to ensure readability
+    const accR = Math.floor(r * 0.8);
+    const accG = Math.floor(g * 0.8);
+    const accB = Math.floor(b * 0.8);
+
+    document.documentElement.style.setProperty('--bg-color-rgb', `${bgR}, ${bgG}, ${bgB}`);
+    document.documentElement.style.setProperty('--accent', `rgb(${accR}, ${accG}, ${accB})`);
+    document.documentElement.style.setProperty('--text-main', `rgb(${textR}, ${textG}, ${textB})`);
+    document.documentElement.style.setProperty('--text-muted', `rgba(${textR}, ${textG}, ${textB}, 0.6)`);
+    document.documentElement.style.setProperty('--border-color', `rgba(${textR}, ${textG}, ${textB}, 0.15)`);
+  }
+  broadcastThemeVars()
+}
+
+function broadcastThemeVars() {
+  const root = document.documentElement;
+  localStorage.setItem('themeVars', JSON.stringify({
+    bg: root.style.getPropertyValue('--bg-color-rgb') || '15, 15, 15',
+    text: root.style.getPropertyValue('--text-main') || 'rgb(255, 255, 255)',
+    muted: root.style.getPropertyValue('--text-muted') || 'rgba(255, 255, 255, 0.5)',
+    accent: root.style.getPropertyValue('--accent') || '#39ff14',
+    border: root.style.getPropertyValue('--border-color') || 'rgba(255,255,255,0.1)'
+  }));
+}
+
+customGifImg.addEventListener('load', updateGifAdaptiveTheme);
+
+btnSaveGif.addEventListener('click', () => {
+  const name = customGifNameInput.value.trim() || 'My GIF';
+  const url = customGifUrlInput.value.trim();
+  if (url) {
+    savedCustomGifs.push({ name, url });
+    localStorage.setItem('savedCustomGifs', JSON.stringify(savedCustomGifs));
+    
+    customGifSettings.url = url;
+    localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+    
+    customGifNameInput.value = '';
+    applyCustomGifSettings();
+    renderSavedGifs();
+  }
+});
+
+// Initial Render
+applyCustomGifSettings();
+if (customGifSettings.enabled) renderSavedGifs();

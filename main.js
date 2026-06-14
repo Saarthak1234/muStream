@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
+import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { searchCommand } from './src/youtube.js'
 import mpvAPI from 'node-mpv'
@@ -7,7 +8,7 @@ import spotifyUrlInfo from 'spotify-url-info'
 
 const { getTracks } = spotifyUrlInfo(fetch)
 import { isLoggedIn, getTokens, isTokenExpired, saveTokens, saveAppCredentials, getAppCredentials } from './src/config.js'
-import { getSpotifyClient } from './src/auth.js'
+import { getSpotifyClient, electronAuthCommand } from './src/auth.js'
 
 const mpv = new mpvAPI({
   audio_only: true,
@@ -31,7 +32,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      webSecurity: false
     }
   })
 
@@ -135,9 +137,47 @@ ipcMain.handle('open-credentials-window', () => {
   credsWindow.on('closed', () => { credsWindow = null })
 })
 
-ipcMain.handle('save-spotify-creds', (event, id, secret) => {
+ipcMain.handle('save-spotify-creds', async (event, id, secret) => {
   saveAppCredentials({ clientId: id, clientSecret: secret })
   if (credsWindow) credsWindow.close()
+  try {
+    await electronAuthCommand()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.reload()
+    }
+  } catch (err) {
+    console.error("Auth failed:", err)
+  }
+})
+
+ipcMain.handle('save-custom-theme', (event, theme) => {
+  const themesPath = path.join(app.getPath('userData'), 'user-themes.json')
+  let themes = []
+  if (fs.existsSync(themesPath)) {
+    try { themes = JSON.parse(fs.readFileSync(themesPath, 'utf8')) } catch(e){}
+  }
+  themes.push(theme)
+  fs.writeFileSync(themesPath, JSON.stringify(themes))
+  return true
+})
+
+ipcMain.handle('delete-custom-theme', (event, themeName) => {
+  const themesPath = path.join(app.getPath('userData'), 'user-themes.json')
+  let themes = []
+  if (fs.existsSync(themesPath)) {
+    try { themes = JSON.parse(fs.readFileSync(themesPath, 'utf8')) } catch(e){}
+  }
+  themes = themes.filter(t => t.name !== themeName)
+  fs.writeFileSync(themesPath, JSON.stringify(themes))
+  return true
+})
+
+ipcMain.handle('load-custom-themes', () => {
+  const themesPath = path.join(app.getPath('userData'), 'user-themes.json')
+  if (fs.existsSync(themesPath)) {
+    try { return JSON.parse(fs.readFileSync(themesPath, 'utf8')) } catch(e){}
+  }
+  return []
 })
 
 ipcMain.handle('get-spotify-creds', () => getAppCredentials())
@@ -222,6 +262,22 @@ ipcMain.handle('get-playlist-tracks', async (event, playlistId) => {
       const data = await res.json()
       
       if (data.error) {
+        if (data.error.status === 403) {
+          // Spotify API blocks algorithmic playlists (like Daily Mixes) via API. Fallback to public web scraping!
+          try {
+            const publicUrl = `https://open.spotify.com/playlist/${playlistId}`
+            const rawTracks = await getTracks(publicUrl)
+            if (rawTracks && rawTracks.length > 0) {
+              const mapped = rawTracks.map(t => ({
+                name: t.name,
+                artist: t.artists ? t.artists.map(a => a.name).join(', ') : (t.artist || 'Unknown')
+              }))
+              return { status: 'success', tracks: mapped }
+            }
+          } catch (scrapeErr) {
+            return { status: 'error', message: 'Spotify blocks third-party apps from reading this algorithmic playlist (e.g. Daily Mix/Blend).' }
+          }
+        }
         console.error('Spotify API Error:', data.error)
         return { status: 'error', message: data.error.message }
       }
@@ -268,6 +324,7 @@ ipcMain.handle('fetch-playlist-url', async (event, url) => {
 })
 
 let playQueue = []
+let originalQueue = []
 let playHistory = []
 let isLooping = false
 let isShuffling = false
@@ -309,13 +366,7 @@ function handleNextSong() {
   }
   if (currentTrack) playHistory.push(currentTrack.query)
   if (playQueue.length > 0) {
-    let nextQuery;
-    if (isShuffling) {
-      const idx = Math.floor(Math.random() * playQueue.length)
-      nextQuery = playQueue.splice(idx, 1)[0]
-    } else {
-      nextQuery = playQueue.shift()
-    }
+    let nextQuery = playQueue.shift()
     playTrack(nextQuery)
   } else {
     currentTrack = null
@@ -368,6 +419,13 @@ ipcMain.handle('splice-queue', (e, start, deleteCount) => {
 
 ipcMain.handle('set-queue', (event, newQueue) => {
   playQueue = Array.isArray(newQueue) ? newQueue : []
+  if (isShuffling) {
+    originalQueue = [...playQueue]
+    for (let i = playQueue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [playQueue[i], playQueue[j]] = [playQueue[j], playQueue[i]];
+    }
+  }
   return playQueue
 })
 
@@ -390,6 +448,16 @@ ipcMain.handle('toggle-loop', () => {
 
 ipcMain.handle('toggle-shuffle', () => {
   isShuffling = !isShuffling
+  if (isShuffling) {
+    originalQueue = [...playQueue]
+    for (let i = playQueue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [playQueue[i], playQueue[j]] = [playQueue[j], playQueue[i]];
+    }
+  } else {
+    const newlyAdded = playQueue.filter(track => !originalQueue.includes(track))
+    playQueue = [...originalQueue.filter(track => playQueue.includes(track)), ...newlyAdded]
+  }
   return isShuffling
 })
 

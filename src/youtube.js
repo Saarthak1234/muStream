@@ -8,8 +8,10 @@ import { tui } from './tui.js'
 const ytDlp = new YTDlpWrap()
 
 export async function getStreamData(query) {
+  const searchQuery = query;
+  console.log('YouTube Search Query:', searchQuery)
   const output = await ytDlp.execPromise([
-    `ytsearch1:${query}`,   
+    `ytsearch1:${searchQuery}`,   
     '--get-title',
     '--get-url',
     '--get-duration',       

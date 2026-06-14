@@ -6,6 +6,7 @@
   <title>muStream</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
 </head>
 <body>
   <div class="app-wrapper">
@@ -19,7 +20,7 @@
           </div>
           <span id="active-playlist-name" style="color: var(--text-muted); font-size: 13px; font-weight: 500; margin-left: 12px; display: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;"></span>
           <!-- Playlist Dropdown Menu -->
-          <div id="playlist-menu" style="display: none; position: absolute; top: 100%; left: 0; background: #1c1c1e; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; width: 220px; z-index: 100; margin-top: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
+          <div id="playlist-menu" style="display: none; position: absolute; top: 100%; left: 0; background: rgba(var(--bg-color-rgb), 0.98); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; width: 220px; z-index: 100; margin-top: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
             <!-- Items injected by renderer -->
           </div>
         </div>
@@ -34,11 +35,14 @@
     <!-- Main Content Area -->
     <div class="main-content">
       <div class="player-container">
-        <div class="artwork-container">
-          <div class="artwork" id="artwork"></div>
+        <div class="custom-gif-wrapper" style="position: relative; width: 72px; height: 72px; margin-right: 20px; flex-shrink: 0; cursor: pointer;">
+          <img id="custom-gif-img" crossorigin="anonymous" src="" style="width: 100%; height: 100%; border-radius: 8px; object-fit: cover; background: rgba(0,0,0,0.2);" />
+          <div class="custom-gif-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 8px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          </div>
         </div>
         <div class="track-info">
-          <div class="title" id="track-title">Type a thought... (Search)</div>
+          <div class="title" id="track-title">Search for a song...</div>
           <div class="artist" id="track-artist">Ready to play</div>
         </div>
         <div class="controls" style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; margin-top: 12px;">
@@ -66,7 +70,7 @@
 
       <div class="progress-container" style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
         <span class="time-elapsed" style="font-size: 11px; color: var(--text-muted); min-width: 35px; text-align: right;">0:00</span>
-        <div class="progress-bar" id="progress-bar-container" style="flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; cursor: pointer;">
+        <div class="progress-bar" id="progress-bar-container" style="flex: 1; height: 4px; background: var(--border-color); border-radius: 2px; position: relative; cursor: pointer;">
           <div class="progress" style="height: 100%; background: var(--accent); width: 0%; pointer-events: none;"></div>
         </div>
         <span class="time-total" style="font-size: 11px; color: var(--text-muted); min-width: 35px;">0:00</span>
@@ -85,7 +89,7 @@
 
       <!-- Expandable Search Input Container -->
       <div class="search-container" id="search-container" style="flex: 1; max-width: 0; opacity: 0; overflow: hidden; transition: max-width 0.3s ease, opacity 0.3s ease;">
-        <input type="text" id="search-input" class="bottom-search" placeholder="Search a song..." style="width: 100%; margin: 0; padding: 6px 12px; box-sizing: border-box; background: transparent; border: 1px solid var(--accent); color: white; border-radius: 20px; outline: none; font-size: 13px;" />
+        <input type="text" id="search-input" class="bottom-search" placeholder="Search a song..." style="width: 100%; margin: 0; padding: 6px 12px; box-sizing: border-box; background: transparent; border: 1px solid var(--accent); color: var(--text-main); border-radius: 20px; outline: none; font-size: 13px;" />
       </div>
 
       <!-- Bottom Right: Search Icon & Settings Button -->
@@ -146,13 +150,109 @@
           </div>
         </div>
 
-        <div class="opacity-box">
-          <div class="opacity-header">
+        <div class="setting-item" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 12px;">
             <span>Background Opacity</span>
             <span id="opacity-value">95%</span>
           </div>
-          <input type="range" id="opacity-slider" min="10" max="100" value="95">
+          <input type="range" id="opacity-slider" min="40" max="100" value="95">
           <p class="opacity-desc">Makes the window translucent. Text stays sharp — only the background fades.</p>
+        </div>
+
+        <div class="setting-item" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 32px;" id="brightness-setting-container">
+          <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 12px;">
+            <span>Background Brightness</span>
+            <span id="brightness-value">80%</span>
+          </div>
+          <input type="range" id="brightness-slider" min="0" max="100" value="80">
+          <p class="opacity-desc">Adjust the overall brightness (darkness) of the background.</p>
+        </div>
+
+        <div class="custom-gif-box" style="background: rgba(255, 255, 255, 0.03); padding: 16px; border-radius: 8px; margin-top: 24px; border: 1px solid rgba(255, 255, 255, 0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: var(--text-main); font-weight: 500;">Enable Custom GIF</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-custom-gif">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="custom-gif-details" style="display: none; margin-top: 16px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <input type="text" id="custom-gif-name" class="premium-input" placeholder="GIF Name (e.g. Nyan Cat)" style="flex: 1; box-sizing: border-box;">
+              <input type="text" id="custom-gif-url" class="premium-input" placeholder="Paste GIF URL..." style="flex: 2; box-sizing: border-box;">
+              <button id="btn-save-gif" style="background: var(--text-main); color: var(--bg-color); border: none; border-radius: 8px; padding: 0 16px; font-weight: 500; cursor: pointer; transition: opacity 0.2s;">Save</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+              <span style="font-size: 13px; color: var(--text-main); font-weight: 500;">Set GIF as App Background</span>
+              <label class="switch">
+                <input type="checkbox" id="toggle-gif-bg">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div id="saved-gifs-grid" class="gif-masonry">
+              <!-- Saved GIFs will be injected here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Entry State -->
+        <div id="theme-builder-entry" style="display: flex; gap: 12px; margin-top: 32px; margin-bottom: 32px;">
+          <button id="btn-show-builder" style="flex: 1; background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: var(--text-main); border-radius: 8px; padding: 12px; font-size: 14px; cursor: pointer; transition: background 0.2s;">+ Create custom theme</button>
+          <button id="btn-import-theme" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); border-radius: 8px; padding: 0 16px; font-size: 14px; cursor: pointer;">Import</button>
+        </div>
+
+        <!-- Main Form -->
+        <div id="theme-builder-form" class="custom-theme-builder" style="display: none;">
+          <h3 style="margin-top: 0; font-size: 16px; margin-bottom: 24px;">Create Custom Theme</h3>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Theme Name</label>
+            <input type="text" id="custom-theme-name" class="premium-input" placeholder="e.g. Midnight Blue" style="width: 100%; box-sizing: border-box;">
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <span style="font-size: 13px; color: var(--text-main); font-weight: 500;">Dark theme</span>
+            <label class="switch">
+              <input type="checkbox" id="custom-theme-dark" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+          
+          <div class="colors-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; position: relative;">
+            <div class="color-pill" data-target="bg" style="cursor: pointer;">
+              <div id="swatch-bg" style="width: 24px; height: 24px; border-radius: 6px; background: #0f0f0f; border: 1px solid rgba(255,255,255,0.1);"></div>
+              <span>Background</span>
+            </div>
+            <div class="color-pill" data-target="text" style="cursor: pointer;">
+              <div id="swatch-text" style="width: 24px; height: 24px; border-radius: 6px; background: #ffffff; border: 1px solid rgba(255,255,255,0.1);"></div>
+              <span>Text</span>
+            </div>
+            <div class="color-pill" data-target="accent" style="cursor: pointer;">
+              <div id="swatch-accent" style="width: 24px; height: 24px; border-radius: 6px; background: #39ff14; border: 1px solid rgba(255,255,255,0.1);"></div>
+              <span>Accent</span>
+            </div>
+            
+            <!-- iro.js Color Wheel Popover -->
+            <div id="color-wheel-popover" style="display: none; position: absolute; z-index: 1000; background: #1a1a1c; border: 1px solid #333; padding: 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
+              <div id="color-wheel-container"></div>
+            </div>
+          </div>
+          
+          <div class="theme-preview-card" style="background: #111; padding: 16px; border-radius: 8px; border: 1px solid #333; margin-bottom: 24px;">
+            <div style="font-size: 12px; color: #888; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Preview</div>
+            <div id="preview-box" style="background: rgb(var(--bg-color-rgb)); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--text-main); font-size: 16px; font-weight: 600; margin-bottom: 16px;">Sample Title</div>
+              <div style="display: flex; gap: 8px;">
+                <button style="background: var(--accent); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;">Primary</button>
+                <button style="background: transparent; color: var(--text-main); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 6px; font-size: 13px;">Secondary</button>
+              </div>
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: flex-end; gap: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05);">
+            <button id="btn-cancel-theme" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; font-weight: 500;">Cancel</button>
+            <button id="btn-save-theme" class="premium-btn">Create Theme</button>
+          </div>
         </div>
       </div>
 
@@ -174,16 +274,17 @@
     </div>
 
     <!-- Tracks Sidebar -->
-    <div id="tracks-sidebar" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #18181a; border-left: 1px solid var(--border-color); z-index: 200; transition: right 0.3s ease; display: flex; flex-direction: column; box-shadow: -4px 0 15px rgba(0,0,0,0.5);">
+    <div id="tracks-sidebar" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: rgba(var(--bg-color-rgb), 0.95); border-left: 1px solid var(--border-color); z-index: 200; transition: right 0.3s ease; display: flex; flex-direction: column; box-shadow: -4px 0 15px rgba(0,0,0,0.5);">
       <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
         <h3 id="sidebar-title" style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">Playlist</h3>
         <button id="btn-close-sidebar" class="icon-btn" style="color: var(--text-muted);"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
-      <div style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center;">
-        <button id="btn-queue-all" style="background: rgba(57,255,20,0.2); color: var(--accent); border: 1px solid rgba(57,255,20,0.3); padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%;">Add All to Queue</button>
+      <div style="padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+        <h3 id="sidebar-title" style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">Playlist</h3>
+        <button id="btn-queue-all" style="background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%;">Add All to Queue</button>
       </div>
-      <div style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-        <input type="text" id="search-tracks" placeholder="Search songs..." style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px; font-size: 11px; border-radius: 4px; outline: none;">
+      <div style="padding: 8px;">
+        <input type="text" id="search-tracks" placeholder="Search songs..." style="width: 100%; box-sizing: border-box; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 4px; font-size: 11px; border-radius: 4px; outline: none;">
       </div>
       <div id="sidebar-tracks" style="flex: 1; overflow-y: auto; padding: 8px;">
         <!-- Tracks here -->
@@ -191,23 +292,23 @@
     </div>
 
     <!-- Queue Sidebar -->
-    <div id="queue-sidebar" style="position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #18181a; border-right: 1px solid var(--border-color); z-index: 200; transition: left 0.3s ease; display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.5);">
+    <div id="queue-sidebar" style="position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: rgba(var(--bg-color-rgb), 0.95); border-right: 1px solid var(--border-color); z-index: 200; transition: left 0.3s ease; display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.5);">
       <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
         <h3 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-main);">Up Next</h3>
-        <button id="btn-close-queue" class="icon-btn" style="color: var(--text-muted);"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+        <button id="btn-close-queue" class="icon-btn" style="color: var(--text-muted); -webkit-app-region: no-drag; position: relative; z-index: 10;"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
-      <div style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; display: flex; gap: 8px;">
-
-        <button id="btn-clear-queue" style="background: rgba(255,95,86,0.2); color: #ff5f56; border: 1px solid rgba(255,95,86,0.3); padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; flex: 1;">Clear</button>
+      <div style="padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-main);">Queue</h3>
+        <button id="btn-clear-queue" style="background: transparent; color: #ff5f56; border: 1px solid #ff5f56; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; flex: 1; margin-left: 12px;">Clear</button>
       </div>
-      <div style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-        <input type="text" id="search-queue" placeholder="Search queue..." style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px; font-size: 11px; border-radius: 4px; outline: none;">
+      <div style="padding: 8px;">
+        <input type="text" id="search-queue" placeholder="Search queue..." style="width: 100%; box-sizing: border-box; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 4px; font-size: 11px; border-radius: 4px; outline: none;">
       </div>
       <div id="queue-tracks" style="flex: 1; overflow-y: auto; padding: 8px;">
         <!-- Queued tracks here -->
       </div>
     </div>
-
-    <script src="renderer.js"></script>
+  </div>
+  <script src="renderer.js"></script>
 </body>
 </html>

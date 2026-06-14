@@ -101,6 +101,33 @@ export async function authCommand() {
   }
 }
 
+export async function electronAuthCommand() {
+  const spotify = createSpotifyClient()
+  const scopes = [
+    'playlist-read-private',
+    'playlist-read-collaborative',
+    'user-library-read',
+    'user-read-private',
+    'user-read-email',
+  ]
+  const authURL = spotify.createAuthorizeURL(scopes, 'musync-state')
+  if (openBrowser) {
+    await openBrowser(authURL)
+  }
+  const code = await waitForCallback()
+  const data = await spotify.authorizationCodeGrant(code)
+  const { access_token, refresh_token, expires_in } = data.body
+  saveTokens({
+    accessToken:  access_token,
+    refreshToken: refresh_token,
+    expiresIn:    expires_in,
+  })
+  spotify.setAccessToken(access_token)
+  const me = await spotify.getMe()
+  saveUserInfo({ id: me.body.id, displayName: me.body.display_name })
+  return true
+}
+
 function waitForCallback() {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
