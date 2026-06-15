@@ -1,3 +1,25 @@
+/* ─── Custom Scrollbar (cross-platform) ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 :root {
   --bg-color-rgb: 15, 15, 15; /* Neon Dark */
   --bg-opacity: 0.95;

@@ -134,12 +134,25 @@ app.on('before-quit', () => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  // On Linux/Windows: fully quit so mpv is killed cleanly
+  if (process.platform !== 'darwin') {
+    app.isQuiting = true
+    try { mpv.quit() } catch(e) {}
+    app.quit()
+  }
 })
 
 // IPC Handlers
 ipcMain.handle('close-app', () => {
-  if (mainWindow) mainWindow.hide()
+  if (process.platform === 'darwin') {
+    // macOS: hide to tray (re-open via global shortcut)
+    if (mainWindow) mainWindow.hide()
+  } else {
+    // Linux/Windows: fully quit and kill mpv
+    app.isQuiting = true
+    try { mpv.quit() } catch(e) {}
+    app.quit()
+  }
 })
 ipcMain.handle('minimize-app', () => {
   if (mainWindow) mainWindow.minimize()
@@ -224,7 +237,7 @@ ipcMain.handle('open-gif-window', () => {
     height: 480,
     frame: false,
     transparent: true,
-    vibrancy: 'fullscreen-ui',
+    ...(process.platform === 'darwin' ? { vibrancy: 'fullscreen-ui' } : {}),
     resizable: false,
     webPreferences: {
       nodeIntegration: false,

@@ -565,14 +565,26 @@ const inputs = {
 
 function formatDisplay(electronShortcut) {
   if (!electronShortcut) return '';
-  return electronShortcut
-    .replace(/CommandOrControl/g, '⌘')
-    .replace(/Command/g, '⌘')
-    .replace(/Control/g, '⌃')
-    .replace(/Shift/g, '⇧')
-    .replace(/Alt/g, '⌥')
-    .replace(/\+/g, '')
-    .toUpperCase();
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+  if (isMac) {
+    return electronShortcut
+      .replace(/CommandOrControl/g, '⌘')
+      .replace(/Command/g, '⌘')
+      .replace(/Control/g, '⌃')
+      .replace(/Shift/g, '⇧')
+      .replace(/Alt/g, '⌥')
+      .replace(/\+/g, '')
+      .toUpperCase();
+  } else {
+    return electronShortcut
+      .replace(/CommandOrControl/g, 'Ctrl')
+      .replace(/Command/g, 'Ctrl')
+      .replace(/Control/g, 'Ctrl')
+      .replace(/Shift/g, 'Shift')
+      .replace(/Alt/g, 'Alt')
+      .replace(/\+/g, '+')
+      .toUpperCase();
+  }
 }
 
 function updateInputs() {
