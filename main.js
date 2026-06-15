@@ -126,7 +126,7 @@ async function checkAndInstallDeps() {
         alwaysOnTop: true, resizable: false,
         webPreferences: { contextIsolation: true }
       })
-      progressDialog.loadURL(`data:text/html,<body style="font-family:sans-serif;background:rgba(15,15,15,0.95);color:white;display:flex;align-items:center;justify-content:center;height:100vh;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"><p>Installing ${names}…<br><small style="opacity:0.5">This may take a minute.</small></p></body>`)
+      progressDialog.loadURL(`data:text/html;charset=utf-8,<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:sans-serif;background:rgba(15,15,15,0.97);color:white;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,0.1);}p{text-align:center;line-height:1.6;}small{opacity:0.5;font-size:12px;}</style></head><body><p>Installing ${names}...<br><small>This may take a minute.</small></p></body></html>`)
 
       const success = await runInstallCmd(installCmd)
       progressDialog.close()
