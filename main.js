@@ -96,12 +96,15 @@ async function checkAndInstallDeps() {
     }
   } else if (platform === 'win32') {
     if (isCmdAvailable('scoop')) {
+      // Scoop is available — use it directly (has both mpv and yt-dlp)
       installCmd = `scoop install ${missing.join(' ')}`
       managerName = 'Scoop'
-    } else if (isCmdAvailable('winget') && !missing.includes('mpv')) {
-      // winget only works for yt-dlp, not mpv (mpv not in default winget catalog)
-      installCmd = missing.map(m => `winget install --id yt-dlp.yt-dlp -e`).join(' && ')
-      managerName = 'winget'
+    } else {
+      // Scoop not installed — install it first, then install deps via Scoop
+      // mpv is NOT in the winget catalog so Scoop is the only reliable option
+      const scoopBootstrap = missing.join(' ')
+      installCmd = `powershell -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; iwr -useb get.scoop.sh | iex; scoop install ${scoopBootstrap}"`
+      managerName = 'Scoop (will be installed automatically)'
     }
   }
 
