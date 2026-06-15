@@ -28,19 +28,19 @@ Download the latest `.dmg` from the [Releases page](https://github.com/Saarthak1
 ### Windows
 **One-line install (PowerShell):**
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/Saarthak1234/muStream/releases/latest/download/muStream-1.1.7.exe" -OutFile "$env:USERPROFILE\Downloads\muStream-Setup.exe"; Start-Process "$env:USERPROFILE\Downloads\muStream-Setup.exe"
+Invoke-WebRequest -Uri "https://github.com/Saarthak1234/muStream/releases/latest/download/muStream-1.1.8.exe" -OutFile "$env:USERPROFILE\Downloads\muStream-Setup.exe"; Start-Process "$env:USERPROFILE\Downloads\muStream-Setup.exe"
 ```
 > If Windows shows a SmartScreen warning, click **"More info" → "Run anyway"**. This is expected since the app is not commercially code-signed.
 
 ### Linux
 **AppImage** (works on any distro, no install required):
 ```bash
-curl -L "https://github.com/Saarthak1234/muStream/releases/latest/download/muStream-1.1.7.AppImage" -o ~/muStream.AppImage && chmod +x ~/muStream.AppImage && ~/muStream.AppImage
+curl -L "https://github.com/Saarthak1234/muStream/releases/latest/download/muStream-1.1.8.AppImage" -o ~/muStream.AppImage && chmod +x ~/muStream.AppImage && ~/muStream.AppImage
 ```
 
 **Debian / Ubuntu (.deb):**
 ```bash
-curl -L "https://github.com/Saarthak1234/muStream/releases/latest/download/mustream_1.1.7_amd64.deb" -o /tmp/mustream.deb && sudo dpkg -i /tmp/mustream.deb
+curl -L "https://github.com/Saarthak1234/muStream/releases/latest/download/mustream_1.1.8_amd64.deb" -o /tmp/mustream.deb && sudo dpkg -i /tmp/mustream.deb
 ```
 
 > **Note for maintainers:** Update the version numbers above whenever a new release is cut.
