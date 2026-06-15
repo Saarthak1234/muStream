@@ -1,10 +1,11 @@
-import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron'
+import { app, BrowserWindow, ipcMain, globalShortcut, dialog, shell } from 'electron'
 import fixPath from 'fix-path'
 
 // Fix the $PATH on macOS when run from a GUI app so it can find Homebrew bins like mpv
 fixPath()
 import path from 'path'
 import fs from 'fs'
+import { execSync, exec } from 'child_process'
 import { fileURLToPath } from 'url'
 import { searchCommand } from './src/youtube.js'
 import mpvAPI from 'node-mpv'
@@ -55,7 +56,119 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, 'ui', 'index.html'))
 }
 
-app.whenReady().then(() => {
+// ─── Dependency Auto-Installer ────────────────────────────────────────────
+function isCmdAvailable(cmd) {
+  try { execSync(`${cmd} --version`, { stdio: 'ignore' }); return true } catch { return false }
+}
+
+function runInstallCmd(cmd) {
+  return new Promise((resolve) => {
+    exec(cmd, { shell: true }, (err) => resolve(!err))
+  })
+}
+
+async function checkAndInstallDeps() {
+  const missing = []
+  if (!isCmdAvailable('mpv'))    missing.push('mpv')
+  if (!isCmdAvailable('yt-dlp')) missing.push('yt-dlp')
+  if (missing.length === 0) return
+
+  const names = missing.join(' and ')
+  const platform = process.platform
+
+  // Build the install command and a human-readable description per OS
+  let installCmd = null
+  let managerName = null
+
+  if (platform === 'darwin') {
+    if (isCmdAvailable('brew')) {
+      installCmd = `brew install ${missing.join(' ')}`
+      managerName = 'Homebrew'
+    }
+  } else if (platform === 'linux') {
+    if (isCmdAvailable('apt-get')) {
+      installCmd = `pkexec apt-get install -y ${missing.join(' ')}`
+      managerName = 'apt'
+    } else if (isCmdAvailable('dnf')) {
+      installCmd = `pkexec dnf install -y ${missing.join(' ')}`
+      managerName = 'dnf'
+    } else if (isCmdAvailable('pacman')) {
+      installCmd = `pkexec pacman -S --noconfirm ${missing.join(' ')}`
+      managerName = 'pacman'
+    }
+  } else if (platform === 'win32') {
+    if (isCmdAvailable('scoop')) {
+      installCmd = `scoop install ${missing.join(' ')}`
+      managerName = 'Scoop'
+    } else if (isCmdAvailable('winget')) {
+      const wingetPkgs = { mpv: 'mpv.mpv', 'yt-dlp': 'yt-dlp.yt-dlp' }
+      installCmd = missing.map(m => `winget install --id ${wingetPkgs[m]} -e`).join(' && ')
+      managerName = 'winget'
+    }
+  }
+
+  if (installCmd && managerName) {
+    const { response } = await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Missing Dependencies',
+      message: `muStream needs ${names} to play audio.`,
+      detail: `Click "Install Now" to automatically install ${names} using ${managerName}.\n\nThis will run:\n${installCmd}`,
+      buttons: ['Install Now', 'Skip (I\'ll do it manually)'],
+      defaultId: 0,
+      cancelId: 1
+    })
+
+    if (response === 0) {
+      const progressDialog = new BrowserWindow({
+        width: 400, height: 150,
+        frame: false, transparent: true,
+        alwaysOnTop: true, resizable: false,
+        webPreferences: { contextIsolation: true }
+      })
+      progressDialog.loadURL(`data:text/html,<body style="font-family:sans-serif;background:rgba(15,15,15,0.95);color:white;display:flex;align-items:center;justify-content:center;height:100vh;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"><p>Installing ${names}…<br><small style="opacity:0.5">This may take a minute.</small></p></body>`)
+
+      const success = await runInstallCmd(installCmd)
+      progressDialog.close()
+
+      if (success) {
+        await dialog.showMessageBox({
+          type: 'info',
+          title: 'Installation Complete',
+          message: `${names} installed successfully! muStream is ready.`,
+          buttons: ['OK']
+        })
+      } else {
+        const { response: retryResponse } = await dialog.showMessageBox({
+          type: 'error',
+          title: 'Installation Failed',
+          message: `Could not install ${names} automatically.`,
+          detail: `Please install manually:\n${installCmd}\n\nmuStream may not work correctly without these dependencies.`,
+          buttons: ['Open Documentation', 'Continue Anyway'],
+          defaultId: 0
+        })
+        if (retryResponse === 0) {
+          shell.openExternal('https://github.com/Saarthak1234/muStream#dependencies')
+        }
+      }
+    }
+  } else {
+    // No known package manager found — guide user to docs
+    await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Missing Dependencies',
+      message: `muStream needs ${names} to play audio.`,
+      detail: `Could not find a package manager to install them automatically.\n\nPlease install ${names} manually and restart muStream.\n\nSee: https://github.com/Saarthak1234/muStream#dependencies`,
+      buttons: ['Open Docs', 'Continue Anyway'],
+      defaultId: 0
+    }).then(({ response }) => {
+      if (response === 0) shell.openExternal('https://github.com/Saarthak1234/muStream#dependencies')
+    })
+  }
+}
+// ──────────────────────────────────────────────────────────────────────────
+
+app.whenReady().then(async () => {
+  await checkAndInstallDeps()
   createWindow()
 
   let currentGlobalShortcut = null;
