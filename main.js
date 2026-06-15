@@ -98,9 +98,9 @@ async function checkAndInstallDeps() {
     if (isCmdAvailable('scoop')) {
       installCmd = `scoop install ${missing.join(' ')}`
       managerName = 'Scoop'
-    } else if (isCmdAvailable('winget')) {
-      const wingetPkgs = { mpv: 'mpv.mpv', 'yt-dlp': 'yt-dlp.yt-dlp' }
-      installCmd = missing.map(m => `winget install --id ${wingetPkgs[m]} -e`).join(' && ')
+    } else if (isCmdAvailable('winget') && !missing.includes('mpv')) {
+      // winget only works for yt-dlp, not mpv (mpv not in default winget catalog)
+      installCmd = missing.map(m => `winget install --id yt-dlp.yt-dlp -e`).join(' && ')
       managerName = 'winget'
     }
   }

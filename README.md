@@ -64,12 +64,15 @@ brew install yt-dlp mpv
 sudo apt install yt-dlp mpv
 ```
 
-**Windows** — Install via [Scoop](https://scoop.sh/) or [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/):
+**Windows** — Install via [Scoop](https://scoop.sh/) (recommended):
 ```powershell
-scoop install yt-dlp mpv
-# or
-winget install yt-dlp.yt-dlp && winget install mpv.mpv
+# 1. Install Scoop (if not already installed)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+# 2. Install dependencies
+scoop install mpv yt-dlp
 ```
+> Note: `mpv` is **not** available via winget. Scoop is the easiest option on Windows.
 Or download them manually and add to your system `PATH`:
 - [yt-dlp releases](https://github.com/yt-dlp/yt-dlp/releases)
 - [mpv for Windows](https://mpv.io/installation/)
