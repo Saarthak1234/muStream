@@ -583,10 +583,20 @@ let isShuffling = false
 let currentTrack = null
 let isManualStop = false
 
+let currentPlayToken = 0
+
 async function playTrack(query) {
+  const token = ++currentPlayToken
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('track-loading', query)
   try {
     const data = await getStreamData(query)
+    
+    // If the user clicked another song while this one was loading, abort!
+    if (token !== currentPlayToken) {
+      console.log(`[playTrack] Aborting playback of '${query}' because a newer track was requested.`)
+      return
+    }
+    
     if (!data.streamUrl) throw new Error('No stream found')
     let durationSeconds = 0
     if (data.durationStr) {
@@ -605,6 +615,7 @@ async function playTrack(query) {
       mainWindow.webContents.send('track-started', currentTrack)
     }
   } catch (err) {
+    if (token !== currentPlayToken) return // Suppress errors if aborted
     console.error('Playback error:', err)
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('track-error', err.message)
     setTimeout(handleNextSong, 2000)
@@ -636,8 +647,11 @@ function handlePrevSong() {
 }
 
 ipcMain.handle('search-song', async (event, query) => {
-  if (currentTrack) playHistory.push(currentTrack.query)
+  if (currentTrack && (!playHistory.length || playHistory[playHistory.length - 1] !== currentTrack.query)) {
+    playHistory.push(currentTrack.query)
+  }
   playTrack(query)
+
   return { success: true }
 })
 
