@@ -1,47 +1,61 @@
+// Helper to safely add event listeners
+function safeOn(id, event, handler) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(event, handler);
+}
+
 // Window Controls
-document.getElementById('btn-close').addEventListener('click', () => {
-  window.api.close()
-})
+safeOn('btn-close', 'click', () => {
+  window.api.close();
+});
 
 // Controls
-let isQueueMode = false
+let isQueueMode = false;
 
-document.getElementById('btn-prev').addEventListener('click', () => window.api.prevSong())
-document.getElementById('btn-next').addEventListener('click', () => window.api.nextSong())
+safeOn('btn-prev', 'click', () => window.api.prevSong());
+safeOn('btn-next', 'click', () => window.api.nextSong());
 
-document.getElementById('btn-queue').addEventListener('click', () => {
-  isQueueMode = !isQueueMode
-  const btn = document.getElementById('btn-queue')
-  if (isQueueMode) {
-    btn.style.color = 'var(--accent)'
-    btn.title = 'Queue Mode: ON'
-  } else {
-    btn.style.color = 'var(--text-muted)'
-    btn.title = 'Queue Mode: OFF'
+safeOn('btn-queue', 'click', () => {
+  isQueueMode = !isQueueMode;
+  const btn = document.getElementById('btn-queue');
+  if (btn) {
+    if (isQueueMode) {
+      btn.style.color = 'var(--accent)';
+      btn.title = 'Queue Mode: ON';
+    } else {
+      btn.style.color = 'var(--text-muted)';
+      btn.title = 'Queue Mode: OFF';
+    }
   }
-})
+});
 
-document.getElementById('btn-queue-sidebar').addEventListener('click', (e) => {
-  e.stopPropagation()
-  const sidebar = document.getElementById('queue-sidebar')
-  if (sidebar.style.left === '0px') {
-    sidebar.style.left = '-280px'
-  } else {
-    sidebar.style.left = '0px'
-    document.getElementById('tracks-sidebar').style.right = '-280px' // close songs
-    renderQueue()
+safeOn('btn-queue-sidebar', 'click', (e) => {
+  e.stopPropagation();
+  const sidebar = document.getElementById('queue-sidebar');
+  const tracksSidebar = document.getElementById('tracks-sidebar');
+  if (sidebar) {
+    if (sidebar.style.left === '0px') {
+      sidebar.style.left = '-280px';
+    } else {
+      sidebar.style.left = '0px';
+      if (tracksSidebar) tracksSidebar.style.right = '-280px'; // close songs
+      renderQueue();
+    }
   }
-})
+});
 
-document.getElementById('btn-close-queue').addEventListener('click', (e) => {
-  e.stopPropagation()
-  document.getElementById('queue-sidebar').style.left = '-280px'
-})
+safeOn('btn-close-queue', 'click', (e) => {
+  e.stopPropagation();
+  const sidebar = document.getElementById('queue-sidebar');
+  if (sidebar) sidebar.style.left = '-280px';
+});
 
-document.getElementById('btn-clear-queue').addEventListener('click', async () => {
-  await window.api.clearQueue()
-  renderQueue()
-})
+safeOn('btn-clear-queue', 'click', async () => {
+  if (window.api && window.api.clearQueue) {
+    await window.api.clearQueue();
+    renderQueue();
+  }
+});
 
 
 
@@ -149,33 +163,40 @@ async function renderQueue() {
   })
 }
 
-document.getElementById('btn-loop').addEventListener('click', async () => {
-  const looping = await window.api.toggleLoop()
-  document.getElementById('btn-loop').style.color = looping ? 'var(--accent)' : 'var(--text-muted)'
-})
+safeOn('btn-loop', 'click', async () => {
+  if (!window.api || !window.api.toggleLoop) return;
+  const looping = await window.api.toggleLoop();
+  const btn = document.getElementById('btn-loop');
+  if (btn) btn.style.color = looping ? 'var(--accent)' : 'var(--text-muted)';
+});
 
-document.getElementById('btn-shuffle').addEventListener('click', async () => {
-  const shuffling = await window.api.toggleShuffle()
-  document.getElementById('btn-shuffle').style.color = shuffling ? 'var(--accent)' : 'var(--text-muted)'
-  renderQueue()
-})
+safeOn('btn-shuffle', 'click', async () => {
+  if (!window.api || !window.api.toggleShuffle) return;
+  const shuffling = await window.api.toggleShuffle();
+  const btn = document.getElementById('btn-shuffle');
+  if (btn) btn.style.color = shuffling ? 'var(--accent)' : 'var(--text-muted)';
+  renderQueue();
+});
 
-// Open Settings
-document.getElementById('btn-settings').addEventListener('click', () => {
-  document.getElementById('settings-panel').classList.add('open')
-})
+// Open Settings — separate window
+safeOn('btn-settings', 'click', () => {
+  if (window.api && window.api.openSettings) window.api.openSettings();
+});
 
-// Close Settings
-document.getElementById('btn-close-settings').addEventListener('click', () => {
-  document.getElementById('settings-panel').classList.remove('open')
-})
+// Close Settings (legacy panel, keep for safety)
+safeOn('btn-close-settings', 'click', () => {
+  const panel = document.getElementById('settings-panel');
+  if (panel) panel.classList.remove('open');
+});
 
 // Playlist Dropdown
-document.getElementById('btn-playlist').addEventListener('click', async (e) => {
-  const menu = document.getElementById('playlist-menu')
+safeOn('btn-playlist', 'click', async (e) => {
+  const menu = document.getElementById('playlist-menu');
+  if (!menu) return;
+  
   if (menu.style.display === 'block') {
-    menu.style.display = 'none'
-    return
+    menu.style.display = 'none';
+    return;
   }
   
   menu.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 12px;">Loading...</div>'
@@ -285,10 +306,12 @@ document.getElementById('btn-playlist').addEventListener('click', async (e) => {
       a.onclick = (ev) => {
         ev.preventDefault()
         menu.style.display = 'none'
+        menu.classList.remove('open')
         const apn = document.getElementById('active-playlist-name')
         apn.innerText = a.dataset.name
         apn.title = a.dataset.name
         apn.style.display = 'inline-block'
+        // Auto-open the songs sidebar when a playlist is selected
         openPlaylistSidebar(pl.id, pl.name)
       }
       menu.appendChild(a)
@@ -433,7 +456,7 @@ function renderSidebarTracks(tracks) {
   })
 }
 
-document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+safeOn('btn-toggle-sidebar', 'click', () => {
   const sidebar = document.getElementById('tracks-sidebar')
   if (sidebar.style.right === '0px') {
     sidebar.style.right = '-280px'
@@ -443,12 +466,12 @@ document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
   }
 })
 
-document.getElementById('btn-close-sidebar').addEventListener('click', (e) => {
+safeOn('btn-close-sidebar', 'click', (e) => {
   e.stopPropagation()
   document.getElementById('tracks-sidebar').style.right = '-280px'
 })
 
-document.getElementById('search-queue').addEventListener('input', (ev) => {
+safeOn('search-queue', 'input', (ev) => {
   const query = ev.target.value.toLowerCase()
   const items = document.getElementById('queue-tracks').children
   for (let i = 0; i < items.length; i++) {
@@ -457,7 +480,7 @@ document.getElementById('search-queue').addEventListener('input', (ev) => {
   }
 })
 
-document.getElementById('search-tracks').addEventListener('input', (ev) => {
+safeOn('search-tracks', 'input', (ev) => {
   const query = ev.target.value.toLowerCase()
   const items = document.getElementById('sidebar-tracks').children
   for (let i = 0; i < items.length; i++) {
@@ -466,7 +489,7 @@ document.getElementById('search-tracks').addEventListener('input', (ev) => {
   }
 })
 
-document.addEventListener('click', (ev) => {
+if (document) document.addEventListener('click', (ev) => {
   const playlistMenu = document.getElementById('playlist-menu')
   const btnPlaylist = document.getElementById('btn-playlist')
   if (playlistMenu && playlistMenu.style.display === 'block') {
@@ -493,7 +516,7 @@ document.addEventListener('click', (ev) => {
   }
 })
 
-document.getElementById('btn-queue-all').addEventListener('click', async () => {
+safeOn('btn-queue-all', 'click', async () => {
   if (currentPlaylistTracks.length > 0) {
     if (!isQueueMode) {
       isQueueMode = true
@@ -521,7 +544,7 @@ document.getElementById('btn-queue-all').addEventListener('click', async () => {
 })
 
 // Close menu when clicking outside
-document.addEventListener('click', (e) => {
+if (document) document.addEventListener('click', (e) => {
   const menu = document.getElementById('playlist-menu')
   const btn = document.getElementById('btn-playlist')
   if (menu && menu.style.display === 'block' && !menu.contains(e.target) && !btn.contains(e.target)) {
@@ -629,9 +652,9 @@ if (inputs.globalToggle) inputs.globalToggle.addEventListener('keydown', (e) => 
 if (inputs.search) inputs.search.addEventListener('keydown', (e) => handleShortcutRecord(e, 'search'));
 if (inputs.gifPicker) inputs.gifPicker.addEventListener('keydown', (e) => handleShortcutRecord(e, 'gifPicker'));
 
-searchBtn.addEventListener('click', toggleSearch)
+if (searchBtn) searchBtn.addEventListener('click', toggleSearch)
 
-window.addEventListener('keydown', (e) => {
+if (window) window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (document.getElementById('settings-modal').style.display === 'flex') {
       document.getElementById('settings-modal').style.display = 'none';
@@ -641,40 +664,57 @@ window.addEventListener('keydown', (e) => {
       window.api.close();
     }
   }
-  
-  // Only trigger custom shortcuts if the user isn't typing in an input
-  if (!e.target.classList.contains('shortcut-recorder') && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-    const pressedKey = e.key.toUpperCase();
-    const isCmdOrCtrl = e.metaKey || e.ctrlKey;
-    
-    const checkMatch = (shortcutConfig) => {
-      if (!shortcutConfig) return false;
-      const parts = shortcutConfig.split('+');
-      const requiresCmd = parts.includes('CommandOrControl') || parts.includes('Command') || parts.includes('Control');
-      const requiresShift = parts.includes('Shift');
-      const requiresAlt = parts.includes('Alt');
-      const letter = parts[parts.length - 1].toUpperCase();
-      
-      return (
-        isCmdOrCtrl === requiresCmd &&
-        e.shiftKey === requiresShift &&
-        e.altKey === requiresAlt &&
-        pressedKey === letter
-      );
-    };
 
-    if (checkMatch(appShortcuts.search)) {
+  // Don't fire playback shortcuts when user is typing in an input/textarea
+  const isTyping = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable;
+
+  if (!isTyping) {
+    // ── Playback controls ──────────────────────────────────────────────
+    if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'MediaPlayPause') {
+      e.preventDefault(); // prevent page scroll on space
+      window.api.togglePlay();
+    } else if (e.key === 'ArrowRight' || e.key === 'MediaTrackNext') {
       e.preventDefault();
-      toggleSearch();
+      window.api.nextSong();
+    } else if (e.key === 'ArrowLeft' || e.key === 'MediaTrackPrevious') {
+      e.preventDefault();
+      window.api.prevSong();
     }
-    if (checkMatch(appShortcuts.gifPicker)) {
-      e.preventDefault();
-      window.api.openGifWindow();
+    // ──────────────────────────────────────────────────────────────────
+
+    // Custom configurable shortcuts (search, gif picker, etc.)
+    if (!e.target.classList.contains('shortcut-recorder')) {
+      const pressedKey = e.key.toUpperCase();
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+      const checkMatch = (shortcutConfig) => {
+        if (!shortcutConfig) return false;
+        const parts = shortcutConfig.split('+');
+        const requiresCmd = parts.includes('CommandOrControl') || parts.includes('Command') || parts.includes('Control');
+        const requiresShift = parts.includes('Shift');
+        const requiresAlt = parts.includes('Alt');
+        const letter = parts[parts.length - 1].toUpperCase();
+        return (
+          isCmdOrCtrl === requiresCmd &&
+          e.shiftKey === requiresShift &&
+          e.altKey === requiresAlt &&
+          pressedKey === letter
+        );
+      };
+
+      if (checkMatch(appShortcuts.search)) {
+        e.preventDefault();
+        toggleSearch();
+      }
+      if (checkMatch(appShortcuts.gifPicker)) {
+        e.preventDefault();
+        window.api.openGifWindow();
+      }
     }
   }
 })
 
-searchInput.addEventListener('keydown', async (e) => {
+if (searchInput) searchInput.addEventListener('keydown', async (e) => {
   if (e.key === 'Enter') {
     const query = e.target.value.trim()
     if (query) {
@@ -695,6 +735,37 @@ searchInput.addEventListener('keydown', async (e) => {
 window.api.onTrackLoading((event, query) => {
   document.getElementById('track-title').innerText = 'Searching...'
   document.getElementById('track-artist').innerText = query
+})
+
+// Seamlessly update playlist menu when background cache refresh completes
+window.api.onPlaylistsUpdated((event, res) => {
+  const menu = document.getElementById('playlist-menu')
+  if (menu.style.display !== 'block') return // Only update if menu is open
+  // Re-render the playlist items while keeping the menu open
+  const items = menu.querySelectorAll('.playlist-item')
+  items.forEach(el => el.remove())
+  if (res.status === 'success') {
+    res.playlists.forEach(pl => {
+      const a = document.createElement('a')
+      a.href = '#'
+      a.className = 'track-item playlist-item'
+      a.style.display = 'block'
+      a.style.textDecoration = 'none'
+      a.style.borderRadius = '4px'
+      a.innerText = pl.name
+      a.dataset.name = pl.name
+      a.onclick = (ev) => {
+        ev.preventDefault()
+        menu.style.display = 'none'
+        const apn = document.getElementById('active-playlist-name')
+        apn.innerText = pl.name
+        apn.title = pl.name
+        apn.style.display = 'inline-block'
+        openPlaylistSidebar(pl.id, pl.name)
+      }
+      menu.appendChild(a)
+    })
+  }
 })
 
 
@@ -769,27 +840,76 @@ const brightnessValue = document.getElementById('brightness-value')
 const savedOpacity = Math.max(40, parseInt(localStorage.getItem('bgOpacity')) || 95)
 const savedBrightness = Math.min(100, Math.max(0, parseInt(localStorage.getItem('bgBrightness')) || 80))
 
-opacitySlider.value = savedOpacity
-opacityValue.innerText = savedOpacity + '%'
+if (opacitySlider) {
+  opacitySlider.value = savedOpacity
+  opacityValue.innerText = savedOpacity + '%'
+  opacitySlider.addEventListener('input', (e) => {
+    const val = e.target.value
+    opacityValue.innerText = val + '%'
+    root.style.setProperty('--bg-opacity', val / 100)
+    localStorage.setItem('bgOpacity', val)
+  })
+}
 root.style.setProperty('--bg-opacity', savedOpacity / 100)
 
-brightnessSlider.value = savedBrightness
-brightnessValue.innerText = savedBrightness + '%'
+if (brightnessSlider) {
+  brightnessSlider.value = savedBrightness
+  brightnessValue.innerText = savedBrightness + '%'
+  brightnessSlider.addEventListener('input', (e) => {
+    const val = e.target.value
+    brightnessValue.innerText = val + '%'
+    root.style.setProperty('--bg-brightness', val / 100)
+    localStorage.setItem('bgBrightness', val)
+  })
+}
 root.style.setProperty('--bg-brightness', savedBrightness / 100)
 
-opacitySlider.addEventListener('input', (e) => {
-  const val = e.target.value
-  opacityValue.innerText = val + '%'
-  root.style.setProperty('--bg-opacity', val / 100)
-  localStorage.setItem('bgOpacity', val)
+// Storage listener to sync across windows instantly
+if (window) window.addEventListener('storage', (e) => {
+  if (e.key === 'bgOpacity') {
+    const val = parseInt(e.newValue) || 95
+    if (opacitySlider) opacitySlider.value = val
+    if (opacityValue) opacityValue.innerText = val + '%'
+    root.style.setProperty('--bg-opacity', val / 100)
+  }
+  if (e.key === 'bgBrightness') {
+    const val = parseInt(e.newValue) || 80
+    if (brightnessSlider) brightnessSlider.value = val
+    if (brightnessValue) brightnessValue.innerText = val + '%'
+    root.style.setProperty('--bg-brightness', val / 100)
+  }
+  if (e.key === 'themeVars') {
+    try {
+      const t = JSON.parse(e.newValue)
+      if (t) {
+        root.style.setProperty('--bg-color-rgb', t.bg)
+        root.style.setProperty('--text-main', t.text)
+        root.style.setProperty('--text-muted', t.muted)
+        root.style.setProperty('--accent', t.accent)
+        root.style.setProperty('--border-color', t.border)
+      }
+    } catch(err) {}
+  }
+  if (e.key === 'customGifSettings') {
+    customGifSettings = JSON.parse(e.newValue)
+    applyCustomGifSettings()
+  }
 })
 
-brightnessSlider.addEventListener('input', (e) => {
-  const val = e.target.value
-  brightnessValue.innerText = val + '%'
-  root.style.setProperty('--bg-brightness', val / 100)
-  localStorage.setItem('bgBrightness', val)
-})
+// Function to load themes from local storage initially
+function initThemeVars() {
+  try {
+    const t = JSON.parse(localStorage.getItem('themeVars'))
+    if (t) {
+      root.style.setProperty('--bg-color-rgb', t.bg)
+      root.style.setProperty('--text-main', t.text)
+      root.style.setProperty('--text-muted', t.muted)
+      root.style.setProperty('--accent', t.accent)
+      root.style.setProperty('--border-color', t.border)
+    }
+  } catch(err) {}
+}
+initThemeVars()
 
 document.querySelectorAll('.theme-card').forEach(card => {
   card.addEventListener('click', (e) => {
@@ -805,19 +925,13 @@ document.querySelectorAll('.theme-card').forEach(card => {
     }
     
     const rgb = target.getAttribute('data-color')
-    if (rgb) {
-      root.style.setProperty('--bg-color-rgb', rgb)
-    }
+    if (rgb) root.style.setProperty('--bg-color-rgb', rgb)
 
     const accent = target.getAttribute('data-accent')
-    if (accent) {
-      root.style.setProperty('--accent', accent)
-    }
+    if (accent) root.style.setProperty('--accent', accent)
 
     const border = target.getAttribute('data-border')
-    if (border) {
-      root.style.setProperty('--border-color', border)
-    }
+    if (border) root.style.setProperty('--border-color', border)
 
     const textRgb = target.getAttribute('data-text')
     if (textRgb) {
@@ -826,6 +940,10 @@ document.querySelectorAll('.theme-card').forEach(card => {
     } else {
       root.style.setProperty('--text-main', `rgba(255, 255, 255, 0.9)`)
       root.style.setProperty('--text-muted', `rgba(255, 255, 255, 0.5)`)
+    }
+
+    if (typeof broadcastThemeVars === 'function') {
+      broadcastThemeVars();
     }
   })
 })
@@ -894,7 +1012,7 @@ function updatePlayIcon() {
   }
 }
 
-document.getElementById('btn-play').addEventListener('click', () => {
+safeOn('btn-play', 'click', () => {
   window.api.togglePlay()
   isPlaying = !isPlaying
   updatePlayIcon()
@@ -920,19 +1038,19 @@ function seekToEvent(e) {
   return -1
 }
 
-progressBarContainer.addEventListener('mousedown', (e) => {
+if (progressBarContainer) progressBarContainer.addEventListener('mousedown', (e) => {
   console.log('DEBUG [renderer.js]: Mouse Down on progress bar')
   isDraggingProgress = true
   seekToEvent(e)
 })
 
-window.addEventListener('mousemove', (e) => {
+if (window) window.addEventListener('mousemove', (e) => {
   if (isDraggingProgress) {
     seekToEvent(e)
   }
 })
 
-window.addEventListener('mouseup', (e) => {
+if (window) window.addEventListener('mouseup', (e) => {
   if (isDraggingProgress) {
     console.log('DEBUG [renderer.js]: Mouse Up -> Sending Seek IPC to backend')
     isDraggingProgress = false
@@ -1020,7 +1138,7 @@ document.querySelectorAll('.color-pill').forEach(pill => {
   });
 });
 
-document.addEventListener('click', (e) => {
+if (document) document.addEventListener('click', (e) => {
   if (colorWheelPopover && colorWheelPopover.style.display === 'block') {
     if (!colorWheelPopover.contains(e.target)) {
       colorWheelPopover.style.display = 'none';
@@ -1034,12 +1152,12 @@ const btnCancelTheme = document.getElementById('btn-cancel-theme')
 const themeBuilderEntry = document.getElementById('theme-builder-entry')
 const themeBuilderForm = document.getElementById('theme-builder-form')
 
-btnShowBuilder.addEventListener('click', () => {
+if (btnShowBuilder) btnShowBuilder.addEventListener('click', () => {
   themeBuilderEntry.style.display = 'none'
   themeBuilderForm.style.display = 'block'
 })
 
-btnCancelTheme.addEventListener('click', () => {
+if (btnCancelTheme) btnCancelTheme.addEventListener('click', () => {
   themeBuilderForm.style.display = 'none'
   themeBuilderEntry.style.display = 'flex'
 })
@@ -1117,7 +1235,7 @@ injectThemeCard({
   border: 'rgba(0, 0, 0, 0.1)'
 }, false)
 
-saveThemeBtn.addEventListener('click', async () => {
+if (saveThemeBtn) saveThemeBtn.addEventListener('click', async () => {
   const name = themeName.value.trim() || 'Custom Theme'
   const newTheme = {
     name,
@@ -1219,14 +1337,17 @@ function renderSavedGifsGrid() {
 const customGifOverlay = document.querySelector('.custom-gif-overlay');
 const customGifWrapper = document.querySelector('.custom-gif-wrapper');
 
-document.getElementById('btn-open-gif-picker').addEventListener('click', () => {
-  window.api.openGifWindow();
-});
+const btnOpenGifPicker = document.getElementById('btn-open-gif-picker');
+if (btnOpenGifPicker) {
+  btnOpenGifPicker.addEventListener('click', () => {
+    window.api.openGifWindow();
+  });
+}
 
 window.api.onGifSelected((_, gif) => {
   customGifSettings.url = gif.url;
   customGifSettings.enabled = true;
-  toggleCustomGif.checked = true;
+  if (toggleCustomGif) toggleCustomGif.checked = true;
   localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
   
   // Refresh the saved gifs in case new ones were added in the external window
@@ -1237,15 +1358,17 @@ window.api.onGifSelected((_, gif) => {
 });
 
 function applyCustomGifSettings() {
-  customGifImg.style.display = 'block';
+  if (customGifImg) customGifImg.style.display = 'block';
   
   if (customGifSettings.enabled) {
-    toggleCustomGif.checked = true;
+    if (toggleCustomGif) toggleCustomGif.checked = true;
     if (toggleGifBg) toggleGifBg.checked = !!customGifSettings.showBackground;
-    customGifDetails.style.display = 'block';
-    customGifUrlInput.value = customGifSettings.url;
-    customGifImg.src = customGifSettings.url;
-    customGifImg.classList.remove('spin-cd');
+    if (customGifDetails) customGifDetails.style.display = 'block';
+    if (customGifUrlInput) customGifUrlInput.value = customGifSettings.url;
+    if (customGifImg) {
+      customGifImg.src = customGifSettings.url;
+      customGifImg.classList.remove('spin-cd');
+    }
     if (customGifOverlay) customGifOverlay.style.borderRadius = '8px';
 
     if (customGifSettings.showBackground) {
@@ -1254,43 +1377,53 @@ function applyCustomGifSettings() {
       document.body.style.backgroundSize = 'cover';
       document.body.style.backgroundPosition = 'center';
       root.style.setProperty('--bg-blur', '0px');
-      document.getElementById('brightness-setting-container').style.display = 'flex';
-      opacitySlider.min = 70;
-      if (parseInt(opacitySlider.value) < 70) {
-        opacitySlider.value = 70;
-        opacityValue.innerText = '70%';
-        root.style.setProperty('--bg-opacity', 0.7);
-        localStorage.setItem('bgOpacity', 70);
+      const brightnessContainer = document.getElementById('brightness-setting-container');
+      if (brightnessContainer) brightnessContainer.style.display = 'flex';
+      
+      if (opacitySlider) {
+        opacitySlider.min = 70;
+        if (parseInt(opacitySlider.value) < 70) {
+          opacitySlider.value = 70;
+          if (opacityValue) opacityValue.innerText = '70%';
+          root.style.setProperty('--bg-opacity', 0.7);
+          localStorage.setItem('bgOpacity', 70);
+        }
       }
     } else {
       document.body.style.backgroundImage = 'none';
       root.style.setProperty('--bg-blur', '25px');
       root.style.setProperty('--bg-brightness', '1');
-      document.getElementById('brightness-setting-container').style.display = 'none';
-      opacitySlider.min = 40;
+      const brightnessContainer = document.getElementById('brightness-setting-container');
+      if (brightnessContainer) brightnessContainer.style.display = 'none';
+      if (opacitySlider) opacitySlider.min = 40;
     }
   } else {
-    toggleCustomGif.checked = false;
-    customGifDetails.style.display = 'none';
-    customGifImg.src = defaultCdSvg;
-    customGifImg.classList.add('spin-cd');
+    if (toggleCustomGif) toggleCustomGif.checked = false;
+    if (customGifDetails) customGifDetails.style.display = 'none';
+    if (customGifImg) {
+      customGifImg.src = defaultCdSvg;
+      customGifImg.classList.add('spin-cd');
+    }
     if (customGifOverlay) customGifOverlay.style.borderRadius = '50%';
     document.body.style.backgroundImage = 'none';
     root.style.setProperty('--bg-blur', '25px');
     root.style.setProperty('--bg-brightness', '1');
-    document.getElementById('brightness-setting-container').style.display = 'none';
-    opacitySlider.min = 40;
+    const brightnessContainer = document.getElementById('brightness-setting-container');
+    if (brightnessContainer) brightnessContainer.style.display = 'none';
+    if (opacitySlider) opacitySlider.min = 40;
   }
   updateGifAdaptiveTheme();
 }
 
-toggleCustomGif.addEventListener('change', (e) => {
-  customGifSettings.enabled = e.target.checked;
-  if (!customGifSettings.url) customGifSettings.url = 'https://media.tenor.com/3_L-B_yvLuwAAAAi/run-mario.gif';
-  localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
-  applyCustomGifSettings();
-  if (customGifSettings.enabled) renderSavedGifsGrid();
-});
+if (toggleCustomGif) {
+  toggleCustomGif.addEventListener('change', (e) => {
+    customGifSettings.enabled = e.target.checked;
+    if (!customGifSettings.url) customGifSettings.url = 'https://media.tenor.com/3_L-B_yvLuwAAAAi/run-mario.gif';
+    localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+    applyCustomGifSettings();
+    if (customGifSettings.enabled) renderSavedGifsGrid();
+  });
+}
 
 if (toggleGifBg) {
   toggleGifBg.addEventListener('change', (e) => {
@@ -1300,13 +1433,16 @@ if (toggleGifBg) {
   });
 }
 
-customGifUrlInput.addEventListener('input', (e) => {
-  customGifSettings.url = e.target.value.trim();
-  localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
-  applyCustomGifSettings();
-});
+if (customGifUrlInput) {
+  customGifUrlInput.addEventListener('input', (e) => {
+    customGifSettings.url = e.target.value.trim();
+    localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+    applyCustomGifSettings();
+  });
+}
 
 function extractDominantColor(imgEl) {
+  if (!imgEl) return;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   canvas.width = imgEl.naturalWidth || 50;
@@ -1386,25 +1522,51 @@ function broadcastThemeVars() {
   }));
 }
 
-customGifImg.addEventListener('load', updateGifAdaptiveTheme);
+// Ensure customGifImg has listener only if it exists
+if (customGifImg) {
+  customGifImg.addEventListener('load', updateGifAdaptiveTheme);
+}
 
-btnSaveGif.addEventListener('click', () => {
-  const name = customGifNameInput.value.trim() || 'My GIF';
-  const url = customGifUrlInput.value.trim();
-  if (url) {
-    savedCustomGifs.push({ name, url });
-    localStorage.setItem('savedCustomGifs', JSON.stringify(savedCustomGifs));
-    
-    customGifSettings.url = url;
-    localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
-    
-    customGifNameInput.value = '';
-    customGifUrlInput.value = '';
-    applyCustomGifSettings();
-    renderSavedGifsGrid();
-  }
-});
+if (btnSaveGif && customGifNameInput && customGifUrlInput) {
+  btnSaveGif.addEventListener('click', () => {
+    const name = customGifNameInput.value.trim() || 'My GIF';
+    const url = customGifUrlInput.value.trim();
+    if (url) {
+      savedCustomGifs.push({ name, url });
+      localStorage.setItem('savedCustomGifs', JSON.stringify(savedCustomGifs));
+      
+      customGifSettings.url = url;
+      localStorage.setItem('customGifSettings', JSON.stringify(customGifSettings));
+      
+      customGifNameInput.value = '';
+      customGifUrlInput.value = '';
+      applyCustomGifSettings();
+      renderSavedGifsGrid();
+    }
+  });
+}
 
 // Initial Render
 applyCustomGifSettings();
 if (customGifSettings.enabled) renderSavedGifsGrid();
+
+// Cross-window localStorage sync using IPC
+const originalSetItem = localStorage.setItem;
+localStorage.setItem = function(key, value) {
+  originalSetItem.apply(this, arguments);
+  if (window.api && window.api.syncSettings) {
+    window.api.syncSettings({ key, value });
+  }
+};
+
+if (window.api && window.api.onSettingsSynced) {
+  window.api.onSettingsSynced((event, { key, value }) => {
+    originalSetItem.call(localStorage, key, value);
+    // Manually dispatch storage event since it doesn't fire for same-window changes
+    const ev = new StorageEvent('storage', {
+      key: key,
+      newValue: value
+    });
+    window.dispatchEvent(ev);
+  });
+}

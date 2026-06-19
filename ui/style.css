@@ -107,11 +107,15 @@ body {
 .app-tag.interactive {
   cursor: pointer;
   -webkit-app-region: no-drag;
-  transition: background 0.2s;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .app-tag.interactive:hover {
   background: rgba(255,255,255,0.1);
+}
+
+.app-tag.interactive:active {
+  transform: scale(0.96);
 }
 
 .app-tag .dot {
@@ -131,9 +135,10 @@ body {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 .pill-btn:hover { background: rgba(255,255,255,0.2); }
+.pill-btn:active { transform: scale(0.95); }
 
 /* Main Content */
 .main-content {
@@ -223,6 +228,18 @@ body {
   border: none;
   color: var(--text-main);
   cursor: pointer;
+  transition: transform 0.1s ease, color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  transform: scale(1.12);
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
 }
 
 .progress-container {
@@ -290,7 +307,7 @@ body {
   color: var(--text-main);
 }
 
-/* Settings Panel */
+/* Settings Panel (legacy in-app panel — kept for fallback) */
 .settings-panel {
   position: absolute;
   top: 0;
@@ -304,7 +321,8 @@ body {
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .settings-panel.open {
@@ -339,6 +357,7 @@ body {
   padding: 0 24px;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 20px;
+  margin-top: 16px;
 }
 
 .tab {
@@ -458,11 +477,14 @@ input[type=range] {
   cursor: pointer;
   font-size: 12px;
   color: var(--text-main);
-  transition: background 0.2s;
+  transition: background 0.15s ease;
+  border-radius: 6px;
+  margin-bottom: 2px;
 }
 
 .track-item:hover {
   background: rgba(255,255,255,0.08);
+  transform: none;
 }
 
 .track-item:hover .queue-remove-btn {
@@ -481,6 +503,11 @@ input[type=range] {
 
 .drag-handle:hover {
   opacity: 1;
+}
+
+#search-container {
+  transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  will-change: max-width, opacity;
 }
 
 #search-container.expanded {

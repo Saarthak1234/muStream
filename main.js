@@ -24,6 +24,13 @@ const __dirname = path.dirname(__filename)
 let mainWindow
 let credsWindow = null
 let gifWindow = null
+let settingsWindow = null
+
+// ─── Playlist Cache ──────────────────────────────────────────────────────────
+let playlistCache = null
+let playlistCacheTime = 0
+const PLAYLIST_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+// ─────────────────────────────────────────────────────────────────────────────
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -372,11 +379,45 @@ ipcMain.handle('open-gif-window', () => {
   gifWindow.on('closed', () => gifWindow = null)
 })
 
+ipcMain.handle('open-settings', () => {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus()
+    return
+  }
+  settingsWindow = new BrowserWindow({
+    width: 480,
+    height: 560,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    ...(process.platform === 'darwin' ? { vibrancy: 'fullscreen-ui' } : {}),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false
+    }
+  })
+  settingsWindow.loadFile(path.join(__dirname, 'ui', 'settings.html'))
+  settingsWindow.on('closed', () => { settingsWindow = null })
+})
+
+ipcMain.handle('close-settings', () => {
+  if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.close()
+})
+
+ipcMain.handle('sync-settings', (event, settings) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('settings-synced', settings)
+  }
+})
+
 ipcMain.handle('select-gif', (event, url, name) => {
   if (mainWindow) {
     mainWindow.webContents.send('gif-selected', { url, name })
   }
 })
+
 
 ipcMain.handle('is-logged-in', () => {
   return isLoggedIn()
@@ -415,36 +456,45 @@ async function safeGetSpotifyClient() {
 
 ipcMain.handle('get-playlists', async () => {
   if (!isLoggedIn()) return { status: 'not_connected' }
-  
-  const spotify = await safeGetSpotifyClient()
-  if (!spotify) return { status: 'not_connected' }
-  
-  try {
-    const token = spotify.getAccessToken()
-    const res = await fetch(`https://api.spotify.com/v1/me/playlists?limit=50`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json()
-    
-    const likedRes = await fetch(`https://api.spotify.com/v1/me/tracks?limit=1`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const likedData = await likedRes.json()
-    
-    const playlists = []
-    if (likedData && likedData.total > 0) {
-      playlists.push({ id: 'liked_songs', name: 'Liked Songs' })
+
+  // Return cache immediately if fresh, then refresh in background
+  const now = Date.now()
+  const cacheValid = playlistCache && (now - playlistCacheTime) < PLAYLIST_CACHE_TTL
+
+  async function fetchFresh() {
+    const spotify = await safeGetSpotifyClient()
+    if (!spotify) return { status: 'not_connected' }
+    try {
+      const data = await spotify.getUserPlaylists({ limit: 50 })
+      const playlists = [
+        { id: 'liked_songs', name: '❤️  Liked Songs' },
+        ...data.body.items.map(p => ({ id: p.id, name: p.name }))
+      ]
+      const result = { status: 'success', playlists }
+      playlistCache = result
+      playlistCacheTime = Date.now()
+      // Notify renderer of updated data so it can refresh seamlessly
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('playlists-updated', result)
+      }
+      return result
+    } catch (err) {
+      return { status: 'error', message: err.message }
     }
-    if (data.items) {
-      playlists.push(...data.items)
-    }
-    
-    if (playlists.length === 0) return { status: 'no_playlists' }
-    return { status: 'success', playlists: playlists.map(p => ({ id: p.id, name: p.name })) }
-  } catch (err) {
-    return { status: 'error', message: err.message }
   }
+
+  if (cacheValid) {
+    // Return cache immediately, refresh silently in background
+    fetchFresh().catch(console.error)
+    return playlistCache
+  }
+
+  // No valid cache — fetch and wait
+  return await fetchFresh()
 })
+
+
+
 
 ipcMain.handle('get-playlist-tracks', async (event, playlistId) => {
   const spotify = await safeGetSpotifyClient()

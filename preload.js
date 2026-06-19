@@ -28,14 +28,19 @@ contextBridge.exposeInMainWorld('api', {
   getPlaylists: () => ipcRenderer.invoke('get-playlists'),
   getPlaylistTracks: (id) => ipcRenderer.invoke('get-playlist-tracks', id),
   fetchPlaylistUrl: (url) => ipcRenderer.invoke('fetch-playlist-url', url),
+  openSettings: () => ipcRenderer.invoke('open-settings'),
+  closeSettings: () => ipcRenderer.invoke('close-settings'),
   onTrackStarted: (callback) => ipcRenderer.on('track-started', callback),
   onTrackLoading: (callback) => ipcRenderer.on('track-loading', callback),
   onTrackError: (callback) => ipcRenderer.on('track-error', callback),
   onPlaybackTime: (callback) => ipcRenderer.on('playback-time', callback),
   onPlaybackStopped: (callback) => ipcRenderer.on('playback-stopped', callback),
   onPlaybackStateUpdate: (callback) => ipcRenderer.on('playback-state-update', callback),
+  onPlaylistsUpdated: (callback) => ipcRenderer.on('playlists-updated', callback),
   openGifWindow: () => ipcRenderer.invoke('open-gif-window'),
   selectGif: (gifUrl, gifName) => ipcRenderer.invoke('select-gif', gifUrl, gifName),
   onGifSelected: (callback) => ipcRenderer.on('gif-selected', callback),
-  updateGlobalShortcut: (shortcut) => ipcRenderer.invoke('update-global-shortcut', shortcut)
+  updateGlobalShortcut: (shortcut) => ipcRenderer.invoke('update-global-shortcut', shortcut),
+  syncSettings: (settings) => ipcRenderer.invoke('sync-settings', settings),
+  onSettingsSynced: (callback) => ipcRenderer.on('settings-synced', callback)
 })
