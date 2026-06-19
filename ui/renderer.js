@@ -390,9 +390,9 @@ function renderSidebarTracks(tracks) {
     
     addBtn.onclick = (ev) => {
       ev.stopPropagation()
-      const query = `${t.name} ${t.artist}`
+      const query = `${t.name} by ${t.artist}`
       window.api.addQueue(query)
-      document.getElementById('track-artist').innerText = `Queued: ${query}`
+      document.getElementById('track-artist').innerText = `Queued: ${t.name}`
       renderQueue()
     }
     
@@ -423,7 +423,7 @@ function renderSidebarTracks(tracks) {
         const newQueueItems = [];
         for(let j = i + 1; j < tracks.length; j++) {
           const nextTrack = tracks[j];
-          newQueueItems.push(`${nextTrack.name} ${nextTrack.artist}`);
+          newQueueItems.push(`${nextTrack.name} by ${nextTrack.artist}`);
         }
         window.api.setQueue(newQueueItems).then(renderQueue);
       }

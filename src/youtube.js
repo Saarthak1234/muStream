@@ -8,16 +8,20 @@ import { tui } from './tui.js'
 const ytDlp = new YTDlpWrap()
 
 export async function getStreamData(query) {
-  const searchQuery = query;
+  // Append 'audio' to steer YouTube toward official/original uploads
+  // and away from covers, live concerts, compilations
+  const searchQuery = `${query} audio`;
   console.log('YouTube Search Query:', searchQuery)
   const output = await ytDlp.execPromise([
-    `ytsearch1:${searchQuery}`,   
+    `ytsearch3:${searchQuery}`,   // fetch top 3 results and pick best
     '--get-title',
     '--get-url',
-    '--get-duration',       
-    '-f', 'bestaudio/best', 
+    '--get-duration',
+    '-f', 'bestaudio/best',
     '--no-playlist',
     '--no-warnings',
+    '--match-filter', 'duration < 600',  // skip anything over 10 min (albums, live sets)
+    '--playlist-items', '1',             // take only the first match
   ])
   const lines = output.trim().split('\n')
   const title = lines[0]
