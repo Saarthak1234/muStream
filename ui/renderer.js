@@ -1177,11 +1177,13 @@ function injectThemeCard(theme, isCustom = false) {
   }
   
   card.innerHTML = `
-    <div class="theme-preview" style="background: rgb(${theme.color}); border: 1px solid ${theme.border || '#222'}; position: relative;">
+    <div class="theme-preview" style="background: rgb(${theme.color});">
       ${deleteBtnHtml}
-      <div class="p-dot" style="background: ${theme.accent};"></div><div class="p-line" style="background: rgba(${theme.text}, 0.2);"></div>
+      <div class="p-dot" style="background: ${theme.accent};"></div><div class="p-line" style="background: rgba(${theme.text}, 0.3);"></div>
+      <div class="p-line-long" style="background: rgba(${theme.text}, 0.1);"></div>
+      <div class="p-line-med" style="background: rgba(${theme.text}, 0.1);"></div>
     </div>
-    <div class="theme-info"><span style="color: rgb(${theme.text})">${theme.name}</span><span class="badge" style="background: ${theme.accent}; color: #000;">USER</span></div>
+    <div class="theme-info"><span style="color: rgb(${theme.text})">${theme.name}</span><span class="badge" style="color: rgba(${theme.text}, 0.5);">USER</span></div>
   `
   
   if (isCustom) {

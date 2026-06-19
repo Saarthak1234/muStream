@@ -385,8 +385,8 @@ ipcMain.handle('open-settings', () => {
     return
   }
   settingsWindow = new BrowserWindow({
-    width: 480,
-    height: 560,
+    width: 900,
+    height: 700,
     frame: false,
     transparent: true,
     resizable: false,
