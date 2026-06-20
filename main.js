@@ -343,9 +343,12 @@ ipcMain.handle('save-spotify-creds', async (event, id, secret) => {
   saveAppCredentials({ clientId: id, clientSecret: secret })
   if (credsWindow) credsWindow.close()
   try {
-    await electronAuthCommand()
+    await electronAuthCommand((url) => shell.openExternal(url))
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.reload()
+    }
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.reload()
     }
   } catch (err) {
     console.error("Auth failed:", err)

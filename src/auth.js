@@ -101,7 +101,7 @@ export async function authCommand() {
   }
 }
 
-export async function electronAuthCommand() {
+export async function electronAuthCommand(openUrlFn) {
   const spotify = createSpotifyClient()
   const scopes = [
     'playlist-read-private',
@@ -111,7 +111,9 @@ export async function electronAuthCommand() {
     'user-read-email',
   ]
   const authURL = spotify.createAuthorizeURL(scopes, 'musync-state')
-  if (openBrowser) {
+  if (openUrlFn) {
+    await openUrlFn(authURL)
+  } else if (openBrowser) {
     await openBrowser(authURL)
   }
   const code = await waitForCallback()
