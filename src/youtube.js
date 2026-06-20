@@ -13,7 +13,7 @@ export async function getStreamData(query) {
   const searchQuery = `${query} audio`;
   console.log('YouTube Search Query:', searchQuery)
   const output = await ytDlp.execPromise([
-    `ytsearch3:${searchQuery}`,   // fetch top 3 results and pick best
+    `ytsearch5:${searchQuery}`,   // fetch top 5 results and pick best
     '--get-title',
     '--get-url',
     '--get-duration',
@@ -21,9 +21,11 @@ export async function getStreamData(query) {
     '--no-playlist',
     '--no-warnings',
     '--match-filter', 'duration < 600',  // skip anything over 10 min (albums, live sets)
-    '--playlist-items', '1',             // take only the first match
   ])
   const lines = output.trim().split('\n')
+  if (lines.length < 3 || !lines[1]) {
+    throw new Error('No stream found matching criteria')
+  }
   const title = lines[0]
   const streamUrl = lines[1]
   const durationStr = lines[2]
