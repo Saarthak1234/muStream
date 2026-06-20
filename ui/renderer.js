@@ -813,14 +813,16 @@ window.api.isLoggedIn().then(loggedIn => {
   const statusText = document.getElementById('spotify-status-text')
   
   if (loggedIn) {
-    btnTop.innerHTML = 'Connected <span style="display:inline-block; width:6px; height:6px; background:rgb(var(--bg-color-rgb)); border-radius:50%; margin-left:4px; vertical-align:middle;"></span>'
-    btnTop.style.color = 'rgb(var(--bg-color-rgb))'
-    btnTop.style.background = 'var(--accent)'
-    btnTop.style.border = 'none'
-    btnTop.style.fontWeight = '600'
-    
-    // Disable top button action when connected
-    btnTop.onclick = (e) => e.preventDefault()
+    if (btnTop) {
+      btnTop.innerHTML = 'Connected <span style="display:inline-block; width:6px; height:6px; background:rgb(var(--bg-color-rgb)); border-radius:50%; margin-left:4px; vertical-align:middle;"></span>'
+      btnTop.style.color = 'rgb(var(--bg-color-rgb))'
+      btnTop.style.background = 'var(--accent)'
+      btnTop.style.border = 'none'
+      btnTop.style.fontWeight = '600'
+      
+      // Disable top button action when connected
+      btnTop.onclick = (e) => e.preventDefault()
+    }
     
     if (statusText) {
       statusText.textContent = 'Connected'
@@ -838,7 +840,9 @@ window.api.isLoggedIn().then(loggedIn => {
       })
     }
   } else {
-    btnTop.addEventListener('click', toggleSpotifyAuth)
+    if (btnTop) {
+      btnTop.addEventListener('click', toggleSpotifyAuth)
+    }
     if (btnSettings) {
       btnSettings.addEventListener('click', toggleSpotifyAuth)
     }
