@@ -211,119 +211,121 @@ safeOn('btn-playlist', 'click', async (e) => {
   menu.innerHTML = ''
   
   if (res.status === 'not_connected') {
-    menu.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 12px;">Not connected to Spotify</div>'
+    menu.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 12px; margin-bottom: 8px;">Not connected to Spotify</div>'
   } else if (res.status === 'no_playlists') {
-    menu.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 12px;">No playlists found</div>'
+    menu.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 12px; margin-bottom: 8px;">No playlists found</div>'
   } else if (res.status === 'success') {
-      menu.innerHTML = ''
-      
-      const searchInput = document.createElement('input')
-      searchInput.type = 'text'
-      searchInput.placeholder = 'Search playlists...'
-      searchInput.style.width = '100%'
-      searchInput.style.background = 'transparent'
-      searchInput.style.border = '1px solid var(--border-color)'
-      searchInput.style.color = 'var(--text-main)'
-      searchInput.style.padding = '4px'
-      searchInput.style.fontSize = '11px'
-      searchInput.style.borderRadius = '4px'
-      searchInput.style.marginBottom = '8px'
-      searchInput.style.outline = 'none'
-      
-      searchInput.addEventListener('input', (ev) => {
-        const query = ev.target.value.toLowerCase()
-        const items = menu.querySelectorAll('.playlist-item')
-        items.forEach(item => {
-          item.style.display = item.innerText.toLowerCase().includes(query) ? 'block' : 'none'
-        })
-      })
-      menu.appendChild(searchInput)
-  
-      const urlBtn = document.createElement('a')
-      urlBtn.href = '#'
-      urlBtn.className = 'track-item'
-      urlBtn.style.display = 'block'
-      urlBtn.style.color = 'var(--accent)'
-      urlBtn.style.textDecoration = 'none'
-      urlBtn.style.borderRadius = '4px'
-      urlBtn.style.marginBottom = '4px'
-      urlBtn.innerText = '+ Add Playlist URL'
+    menu.innerHTML = ''
     
-    urlBtn.onclick = async (ev) => {
-      ev.preventDefault()
-      const existingInput = document.getElementById('playlist-url-input')
-      if (existingInput) return
-      
-      const inputDiv = document.createElement('div')
-      inputDiv.id = 'playlist-url-input'
-      inputDiv.style.display = 'flex'
-      inputDiv.style.gap = '4px'
-      inputDiv.style.marginBottom = '8px'
-      
-      const input = document.createElement('input')
-      input.type = 'text'
-      input.placeholder = 'https://open.spotify.com/playlist/...'
-      input.style.flex = '1'
-      input.style.background = 'transparent'
-      input.style.border = '1px solid var(--border-color)'
-      input.style.color = 'var(--text-main)'
-      input.style.padding = '4px'
-      input.style.fontSize = '11px'
-      input.style.borderRadius = '4px'
-      
-      const btn = document.createElement('button')
-      btn.innerText = 'Go'
-      btn.style.background = 'var(--accent)'
-      btn.style.color = 'black'
-      btn.style.border = 'none'
-      btn.style.borderRadius = '4px'
-      btn.style.cursor = 'pointer'
-      btn.style.padding = '0 8px'
-      
-      btn.onclick = async () => {
-        if (!input.value) return
-        btn.innerText = '...'
-        const data = await window.api.fetchPlaylistUrl(input.value)
-        if (data.status === 'success') {
-          openPlaylistSidebar('custom-url', 'Custom URL', data.tracks)
-          inputDiv.remove()
-        } else {
-          btn.innerText = 'Err'
-        }
-      }
-      
-      inputDiv.appendChild(input)
-      inputDiv.appendChild(btn)
-      menu.insertBefore(inputDiv, urlBtn.nextSibling)
-    }
-    menu.appendChild(urlBtn)
-
-    res.playlists.forEach(pl => {
-      const a = document.createElement('a')
-      a.href = '#'
-      a.className = 'track-item playlist-item'
-      a.style.display = 'block'
-      a.style.textDecoration = 'none'
-      a.style.borderRadius = '4px'
-      a.innerText = pl.name
-      a.dataset.name = pl.name
-      
-      a.onclick = (ev) => {
-        ev.preventDefault()
-        menu.style.display = 'none'
-        menu.classList.remove('open')
-        const apn = document.getElementById('active-playlist-name')
-        apn.innerText = a.dataset.name
-        apn.title = a.dataset.name
-        apn.style.display = 'inline-block'
-        // Auto-open the songs sidebar when a playlist is selected
-        openPlaylistSidebar(pl.id, pl.name)
-      }
-      menu.appendChild(a)
+    const searchInput = document.createElement('input')
+    searchInput.type = 'text'
+    searchInput.placeholder = 'Search playlists...'
+    searchInput.style.width = '100%'
+    searchInput.style.background = 'transparent'
+    searchInput.style.border = '1px solid var(--border-color)'
+    searchInput.style.color = 'var(--text-main)'
+    searchInput.style.padding = '4px'
+    searchInput.style.fontSize = '11px'
+    searchInput.style.borderRadius = '4px'
+    searchInput.style.marginBottom = '8px'
+    searchInput.style.outline = 'none'
+    
+    searchInput.addEventListener('input', (ev) => {
+      const query = ev.target.value.toLowerCase()
+      const items = menu.querySelectorAll('.playlist-item')
+      items.forEach(item => {
+        item.style.display = item.innerText.toLowerCase().includes(query) ? 'block' : 'none'
+      })
     })
+    menu.appendChild(searchInput)
+    
+    if (res.playlists) {
+      res.playlists.forEach(pl => {
+        const a = document.createElement('a')
+        a.href = '#'
+        a.className = 'track-item playlist-item'
+        a.style.display = 'block'
+        a.style.textDecoration = 'none'
+        a.style.borderRadius = '4px'
+        a.innerText = pl.name
+        a.dataset.name = pl.name
+        
+        a.onclick = (ev) => {
+          ev.preventDefault()
+          menu.style.display = 'none'
+          menu.classList.remove('open')
+          const apn = document.getElementById('active-playlist-name')
+          apn.innerText = a.dataset.name
+          apn.title = a.dataset.name
+          apn.style.display = 'inline-block'
+          openPlaylistSidebar(pl.id, pl.name)
+        }
+        menu.appendChild(a)
+      })
+    }
   } else {
-    menu.innerHTML = `<div style="padding: 8px; color: #ff5f56; font-size: 12px;">Error: ${res.message}</div>`
+    menu.innerHTML = `<div style="padding: 8px; color: #ff5f56; font-size: 12px; margin-bottom: 8px;">Error: ${res.message}</div>`
   }
+
+  // Always append the Add Playlist URL button at the bottom of the menu
+  const urlBtn = document.createElement('a')
+  urlBtn.href = '#'
+  urlBtn.className = 'track-item'
+  urlBtn.style.display = 'block'
+  urlBtn.style.color = 'var(--accent)'
+  urlBtn.style.textDecoration = 'none'
+  urlBtn.style.borderRadius = '4px'
+  urlBtn.style.marginBottom = '4px'
+  urlBtn.innerText = '+ Add Playlist URL'
+  
+  urlBtn.onclick = async (ev) => {
+    ev.preventDefault()
+    const existingInput = document.getElementById('playlist-url-input')
+    if (existingInput) return
+    
+    const inputDiv = document.createElement('div')
+    inputDiv.id = 'playlist-url-input'
+    inputDiv.style.display = 'flex'
+    inputDiv.style.gap = '4px'
+    inputDiv.style.marginBottom = '8px'
+    
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.placeholder = 'https://open.spotify.com/playlist/...'
+    input.style.flex = '1'
+    input.style.background = 'transparent'
+    input.style.border = '1px solid var(--border-color)'
+    input.style.color = 'var(--text-main)'
+    input.style.padding = '4px'
+    input.style.fontSize = '11px'
+    input.style.borderRadius = '4px'
+    
+    const btn = document.createElement('button')
+    btn.innerText = 'Go'
+    btn.style.background = 'var(--accent)'
+    btn.style.color = 'black'
+    btn.style.border = 'none'
+    btn.style.borderRadius = '4px'
+    btn.style.cursor = 'pointer'
+    btn.style.padding = '0 8px'
+    
+    btn.onclick = async () => {
+      if (!input.value) return
+      btn.innerText = '...'
+      const data = await window.api.fetchPlaylistUrl(input.value)
+      if (data.status === 'success') {
+        openPlaylistSidebar('custom-url', 'Custom URL', data.tracks)
+        inputDiv.remove()
+      } else {
+        btn.innerText = 'Err'
+      }
+    }
+    
+    inputDiv.appendChild(input)
+    inputDiv.appendChild(btn)
+    menu.insertBefore(inputDiv, urlBtn.nextSibling)
+  }
+  menu.appendChild(urlBtn)
 })
 
 // Sidebar Logic
