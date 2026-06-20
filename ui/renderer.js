@@ -593,19 +593,33 @@ function toggleSearch() {
 let appShortcuts = JSON.parse(localStorage.getItem('appShortcuts')) || {
   globalToggle: 'CommandOrControl+Shift+M',
   search: 'CommandOrControl+F',
-  gifPicker: 'CommandOrControl+G'
+  gifPicker: 'CommandOrControl+G',
+  settings: 'CommandOrControl+Shift+S',
+  playPause: 'CommandOrControl+Shift+ ',
+  nextSong: 'CommandOrControl+Shift+ArrowRight',
+  prevSong: 'CommandOrControl+Shift+ArrowLeft'
 };
 
 // Upgrade old single-letter shortcuts from previous version
 if (appShortcuts.search === 'f' || appShortcuts.search === 'F') appShortcuts.search = 'CommandOrControl+F';
 if (appShortcuts.gifPicker === 'g' || appShortcuts.gifPicker === 'G') appShortcuts.gifPicker = 'CommandOrControl+G';
 
+// Provide defaults for new shortcuts if they are missing
+if (!appShortcuts.settings) appShortcuts.settings = 'CommandOrControl+Shift+S';
+if (!appShortcuts.playPause) appShortcuts.playPause = 'CommandOrControl+Shift+ ';
+if (!appShortcuts.nextSong) appShortcuts.nextSong = 'CommandOrControl+Shift+ArrowRight';
+if (!appShortcuts.prevSong) appShortcuts.prevSong = 'CommandOrControl+Shift+ArrowLeft';
+
 window.api.updateGlobalShortcut(appShortcuts.globalToggle);
 
 const inputs = {
   globalToggle: document.getElementById('shortcut-global'),
   search: document.getElementById('shortcut-search'),
-  gifPicker: document.getElementById('shortcut-gif')
+  gifPicker: document.getElementById('shortcut-gif'),
+  settings: document.getElementById('shortcut-settings'),
+  playPause: document.getElementById('shortcut-play'),
+  nextSong: document.getElementById('shortcut-next'),
+  prevSong: document.getElementById('shortcut-prev')
 };
 
 function formatDisplay(electronShortcut) {
@@ -636,6 +650,10 @@ function updateInputs() {
   if (inputs.globalToggle) inputs.globalToggle.value = formatDisplay(appShortcuts.globalToggle);
   if (inputs.search) inputs.search.value = formatDisplay(appShortcuts.search);
   if (inputs.gifPicker) inputs.gifPicker.value = formatDisplay(appShortcuts.gifPicker);
+  if (inputs.settings) inputs.settings.value = formatDisplay(appShortcuts.settings);
+  if (inputs.playPause) inputs.playPause.value = formatDisplay(appShortcuts.playPause);
+  if (inputs.nextSong) inputs.nextSong.value = formatDisplay(appShortcuts.nextSong);
+  if (inputs.prevSong) inputs.prevSong.value = formatDisplay(appShortcuts.prevSong);
 }
 updateInputs();
 
@@ -673,6 +691,10 @@ function handleShortcutRecord(e, keyName) {
 if (inputs.globalToggle) inputs.globalToggle.addEventListener('keydown', (e) => handleShortcutRecord(e, 'globalToggle'));
 if (inputs.search) inputs.search.addEventListener('keydown', (e) => handleShortcutRecord(e, 'search'));
 if (inputs.gifPicker) inputs.gifPicker.addEventListener('keydown', (e) => handleShortcutRecord(e, 'gifPicker'));
+if (inputs.settings) inputs.settings.addEventListener('keydown', (e) => handleShortcutRecord(e, 'settings'));
+if (inputs.playPause) inputs.playPause.addEventListener('keydown', (e) => handleShortcutRecord(e, 'playPause'));
+if (inputs.nextSong) inputs.nextSong.addEventListener('keydown', (e) => handleShortcutRecord(e, 'nextSong'));
+if (inputs.prevSong) inputs.prevSong.addEventListener('keydown', (e) => handleShortcutRecord(e, 'prevSong'));
 
 if (searchBtn) searchBtn.addEventListener('click', toggleSearch)
 
@@ -731,6 +753,22 @@ if (window) window.addEventListener('keydown', (e) => {
       if (checkMatch(appShortcuts.gifPicker)) {
         e.preventDefault();
         window.api.openGifWindow();
+      }
+      if (checkMatch(appShortcuts.settings)) {
+        e.preventDefault();
+        if (window.api && window.api.openSettings) window.api.openSettings();
+      }
+      if (checkMatch(appShortcuts.playPause)) {
+        e.preventDefault();
+        window.api.togglePlay();
+      }
+      if (checkMatch(appShortcuts.nextSong)) {
+        e.preventDefault();
+        window.api.nextSong();
+      }
+      if (checkMatch(appShortcuts.prevSong)) {
+        e.preventDefault();
+        window.api.prevSong();
       }
     }
   }
