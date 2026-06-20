@@ -46,6 +46,7 @@ function createWindow() {
     resizable: true,
     minWidth: 400,
     minHeight: 250,
+    title: 'muStream',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
