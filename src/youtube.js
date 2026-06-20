@@ -8,9 +8,7 @@ import { tui } from './tui.js'
 const ytDlp = new YTDlpWrap()
 
 export async function getStreamData(query) {
-  // Append 'audio' to steer YouTube toward official/original uploads
-  // and away from covers, live concerts, compilations
-  const searchQuery = `${query} audio`;
+  const searchQuery = query;
   console.log('YouTube Search Query:', searchQuery)
   const output = await ytDlp.execPromise([
     `ytsearch5:${searchQuery}`,   // fetch top 5 results and pick best
