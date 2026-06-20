@@ -653,6 +653,7 @@ ipcMain.handle('search-song', async (event, query) => {
   if (currentTrack && (!playHistory.length || playHistory[playHistory.length - 1] !== currentTrack.query)) {
     playHistory.push(currentTrack.query)
   }
+  try { await mpv.pause() } catch(e) {}
   playTrack(query)
 
   return { success: true }
