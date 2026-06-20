@@ -1000,7 +1000,39 @@ const btnAuthSettings = document.getElementById('btn-auth-settings')
 const spotifyStatusText = document.getElementById('spotify-status-text')
 
 function toggleSpotifyAuth() {
-  window.api.openCredentialsWindow()
+  const form = document.getElementById('spotify-creds-form')
+  if (form) {
+    form.style.display = form.style.display === 'none' ? 'block' : 'none'
+  } else {
+    window.api.openCredentialsWindow()
+  }
+}
+
+// Inline Credentials Form Logic
+const btnSaveSpotifyCreds = document.getElementById('btn-save-spotify-creds')
+const linkSpotifyDev = document.getElementById('link-spotify-dev')
+
+if (btnSaveSpotifyCreds) {
+  btnSaveSpotifyCreds.addEventListener('click', () => {
+    const clientId = document.getElementById('spotify-client-id').value.trim()
+    const clientSecret = document.getElementById('spotify-client-secret').value.trim()
+    
+    if (!clientId || !clientSecret) {
+      alert('Please enter both Client ID and Client Secret')
+      return
+    }
+    
+    // Save creds and trigger auth
+    btnSaveSpotifyCreds.innerText = 'Authorizing...'
+    window.api.saveSpotifyCreds(clientId, clientSecret)
+  })
+}
+
+if (linkSpotifyDev) {
+  linkSpotifyDev.addEventListener('click', (e) => {
+    e.preventDefault()
+    window.api.openExternal('https://developer.spotify.com/dashboard')
+  })
 }
 
 
