@@ -88,7 +88,12 @@ async function renderQueue() {
     textContainer.style.whiteSpace = 'nowrap'
     textContainer.style.overflow = 'hidden'
     textContainer.style.textOverflow = 'ellipsis'
-    textContainer.innerText = `${i+1}. ${q}`
+    
+    let displayName = q;
+    if (displayName.includes('|DURATION:')) {
+      displayName = displayName.split('|DURATION:')[0].trim();
+    }
+    textContainer.innerText = `${i+1}. ${displayName}`
     
     const removeIconBtn = document.createElement('button')
     removeIconBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>'
@@ -443,7 +448,8 @@ function renderSidebarTracks(tracks) {
     d.ondblclick = (ev) => {
       ev.preventDefault();
       
-      const query = `${t.name} by ${t.artist}`;
+      let query = `${t.name} by ${t.artist}`;
+      if (t.duration_ms) query += `|DURATION:${t.duration_ms}`;
       console.log(query)
       window.api.searchSong(query);
       
@@ -455,7 +461,9 @@ function renderSidebarTracks(tracks) {
         const newQueueItems = [];
         for(let j = i + 1; j < tracks.length; j++) {
           const nextTrack = tracks[j];
-          newQueueItems.push(`${nextTrack.name} by ${nextTrack.artist}`);
+          let nq = `${nextTrack.name} by ${nextTrack.artist}`;
+          if (nextTrack.duration_ms) nq += `|DURATION:${nextTrack.duration_ms}`;
+          newQueueItems.push(nq);
         }
         window.api.setQueue(newQueueItems).then(renderQueue);
       }
@@ -535,7 +543,8 @@ safeOn('btn-queue-all', 'click', async () => {
     
     // Auto-play first track if we are adding many
     const firstTrack = currentPlaylistTracks[0]
-    const firstQuery = `${firstTrack.name} ${firstTrack.artist}`
+    let firstQuery = `${firstTrack.name} by ${firstTrack.artist}`
+    if (firstTrack.duration_ms) firstQuery += `|DURATION:${firstTrack.duration_ms}`
     window.api.searchSong(firstQuery)
     
     // Queue the rest atomically by prepending to current queue
@@ -543,7 +552,9 @@ safeOn('btn-queue-all', 'click', async () => {
     const newQueueItems = []
     for (let i = 1; i < currentPlaylistTracks.length; i++) {
       const t = currentPlaylistTracks[i]
-      newQueueItems.push(`${t.name} ${t.artist}`)
+      let nq = `${t.name} by ${t.artist}`
+      if (t.duration_ms) nq += `|DURATION:${t.duration_ms}`
+      newQueueItems.push(nq)
     }
     await window.api.setQueue([...newQueueItems, ...currentQueue])
     
@@ -741,7 +752,11 @@ if (searchInput) searchInput.addEventListener('keydown', async (e) => {
   }
 })
 
-window.api.onTrackLoading((event, query) => {
+window.api.onTrackLoading((event, payload) => {
+  let query = payload;
+  if (query.includes('|DURATION:')) {
+    query = query.split('|DURATION:')[0].trim();
+  }
   document.getElementById('track-title').innerText = query
   document.getElementById('track-artist').innerText = 'Searching...'
   

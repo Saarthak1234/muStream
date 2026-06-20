@@ -522,7 +522,8 @@ ipcMain.handle('get-playlist-tracks', async (event, playlistId) => {
             if (rawTracks && rawTracks.length > 0) {
               const mapped = rawTracks.map(t => ({
                 name: t.name,
-                artist: t.artists ? t.artists.map(a => a.name).join(', ') : (t.artist || 'Unknown')
+                artist: t.artists ? t.artists.map(a => a.name).join(', ') : (t.artist || 'Unknown'),
+                duration_ms: t.duration_ms || 0
               }))
               return { status: 'success', tracks: mapped }
             }
@@ -543,7 +544,8 @@ ipcMain.handle('get-playlist-tracks', async (event, playlistId) => {
           tracks.push({
             name: trackObj.name,
             artist: trackObj.artists?.[0]?.name ?? 'Unknown',
-            album: trackObj.album?.name ?? ''
+            album: trackObj.album?.name ?? '',
+            duration_ms: trackObj.duration_ms || 0
           })
         }
       })
@@ -567,7 +569,8 @@ ipcMain.handle('fetch-playlist-url', async (event, url) => {
     const tracks = rawTracks.map(t => ({
       name: t.name,
       artist: t.artists?.[0]?.name || t.artist || 'Unknown',
-      album: t.album?.name || ''
+      album: t.album?.name || '',
+      duration_ms: t.duration_ms || 0
     }))
     return { status: 'success', tracks }
   } catch (err) {
