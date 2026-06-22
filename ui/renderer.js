@@ -210,13 +210,28 @@ safeOn('btn-playlist', 'click', async (e) => {
   const res = await window.api.getPlaylists()
   menu.innerHTML = ''
   
+  const saved = JSON.parse(localStorage.getItem('savedPlaylists') || '[]');
+  
   if (res.status === 'not_connected') {
-    menu.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 12px; margin-bottom: 8px;">Not connected to Spotify</div>'
+    const msg = document.createElement('div')
+    msg.style = 'padding: 8px; color: var(--text-muted); font-size: 12px; margin-bottom: 8px;'
+    msg.innerText = 'Not connected to Spotify'
+    menu.appendChild(msg)
   } else if (res.status === 'no_playlists') {
-    menu.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 12px; margin-bottom: 8px;">No playlists found</div>'
-  } else if (res.status === 'success') {
-    menu.innerHTML = ''
-    
+    const msg = document.createElement('div')
+    msg.style = 'padding: 8px; color: var(--text-muted); font-size: 12px; margin-bottom: 8px;'
+    msg.innerText = 'No Spotify playlists found'
+    menu.appendChild(msg)
+  } else if (res.status === 'error') {
+    const msg = document.createElement('div')
+    msg.style = 'padding: 8px; color: #ff5f56; font-size: 12px; margin-bottom: 8px;'
+    msg.innerText = `Error: ${res.message}`
+    menu.appendChild(msg)
+  }
+
+  const hasSpotify = res.status === 'success' && res.playlists && res.playlists.length > 0;
+  
+  if (hasSpotify || saved.length > 0) {
     const searchInput = document.createElement('input')
     searchInput.type = 'text'
     searchInput.placeholder = 'Search playlists...'
@@ -232,39 +247,112 @@ safeOn('btn-playlist', 'click', async (e) => {
     
     searchInput.addEventListener('input', (ev) => {
       const query = ev.target.value.toLowerCase()
-      const items = menu.querySelectorAll('.playlist-item')
+      const items = menu.querySelectorAll('.playlist-item-container')
       items.forEach(item => {
-        item.style.display = item.innerText.toLowerCase().includes(query) ? 'block' : 'none'
+        const text = item.querySelector('.playlist-item').innerText.toLowerCase()
+        item.style.display = text.includes(query) ? 'flex' : 'none'
       })
     })
     menu.appendChild(searchInput)
-    
-    if (res.playlists) {
-      res.playlists.forEach(pl => {
-        const a = document.createElement('a')
-        a.href = '#'
-        a.className = 'track-item playlist-item'
-        a.style.display = 'block'
-        a.style.textDecoration = 'none'
-        a.style.borderRadius = '4px'
-        a.innerText = pl.name
-        a.dataset.name = pl.name
-        
-        a.onclick = (ev) => {
-          ev.preventDefault()
-          menu.style.display = 'none'
-          menu.classList.remove('open')
-          const apn = document.getElementById('active-playlist-name')
-          apn.innerText = a.dataset.name
-          apn.title = a.dataset.name
-          apn.style.display = 'inline-block'
-          openPlaylistSidebar(pl.id, pl.name)
-        }
-        menu.appendChild(a)
-      })
-    }
-  } else {
-    menu.innerHTML = `<div style="padding: 8px; color: #ff5f56; font-size: 12px; margin-bottom: 8px;">Error: ${res.message}</div>`
+  }
+
+  if (hasSpotify) {
+    res.playlists.forEach(pl => {
+      const itemContainer = document.createElement('div')
+      itemContainer.className = 'playlist-item-container'
+      itemContainer.style.display = 'flex'
+      itemContainer.style.alignItems = 'center'
+      
+      const a = document.createElement('a')
+      a.href = '#'
+      a.className = 'track-item playlist-item'
+      a.style.display = 'block'
+      a.style.textDecoration = 'none'
+      a.style.borderRadius = '4px'
+      a.style.flex = '1'
+      a.innerText = pl.name
+      a.dataset.name = pl.name
+      
+      a.onclick = (ev) => {
+        ev.preventDefault()
+        menu.style.display = 'none'
+        const apn = document.getElementById('active-playlist-name')
+        apn.innerText = a.dataset.name
+        apn.title = a.dataset.name
+        apn.style.display = 'inline-block'
+        openPlaylistSidebar(pl.id, pl.name)
+      }
+      itemContainer.appendChild(a)
+      menu.appendChild(itemContainer)
+    })
+  }
+
+  if (saved.length > 0) {
+    const header = document.createElement('div');
+    header.style.padding = '12px 4px 4px 4px';
+    header.style.color = 'var(--text-muted)';
+    header.style.fontSize = '10px';
+    header.style.fontWeight = 'bold';
+    header.style.textTransform = 'uppercase';
+    header.style.letterSpacing = '1px';
+    header.innerText = 'Saved Playlists';
+    menu.appendChild(header);
+
+    saved.forEach((pl, index) => {
+      const itemContainer = document.createElement('div')
+      itemContainer.className = 'playlist-item-container track-item'
+      itemContainer.style.display = 'flex'
+      itemContainer.style.alignItems = 'center'
+      itemContainer.style.justifyContent = 'space-between'
+      itemContainer.style.borderRadius = '4px'
+      itemContainer.style.paddingRight = '8px'
+      
+      const a = document.createElement('a')
+      a.href = '#'
+      a.className = 'playlist-item'
+      a.style.display = 'block'
+      a.style.textDecoration = 'none'
+      a.style.color = 'inherit'
+      a.style.flex = '1'
+      a.innerText = pl.name
+      a.dataset.name = pl.name
+      
+      a.onclick = (ev) => {
+        ev.preventDefault()
+        menu.style.display = 'none'
+        const apn = document.getElementById('active-playlist-name')
+        apn.innerText = a.dataset.name
+        apn.title = a.dataset.name
+        apn.style.display = 'inline-block'
+        openPlaylistSidebar(pl.id, pl.name, pl.tracks)
+      }
+      
+      const delBtn = document.createElement('button')
+      delBtn.innerHTML = '✕'
+      delBtn.style.background = 'transparent'
+      delBtn.style.border = 'none'
+      delBtn.style.color = 'rgba(255,95,86,0.6)'
+      delBtn.style.cursor = 'pointer'
+      delBtn.style.fontSize = '12px'
+      delBtn.style.padding = '4px'
+      delBtn.style.lineHeight = '1'
+      delBtn.title = 'Delete saved playlist'
+      
+      delBtn.onmouseover = () => delBtn.style.color = 'rgba(255,95,86,1)'
+      delBtn.onmouseout = () => delBtn.style.color = 'rgba(255,95,86,0.6)'
+      
+      delBtn.onclick = (ev) => {
+        ev.stopPropagation()
+        saved.splice(index, 1)
+        localStorage.setItem('savedPlaylists', JSON.stringify(saved))
+        menu.style.display = 'none'
+        document.getElementById('btn-playlist').click()
+      }
+      
+      itemContainer.appendChild(a)
+      itemContainer.appendChild(delBtn)
+      menu.appendChild(itemContainer)
+    })
   }
 
   // Always append the Add Playlist URL button at the bottom of the menu
@@ -314,10 +402,18 @@ safeOn('btn-playlist', 'click', async (e) => {
       btn.innerText = '...'
       const data = await window.api.fetchPlaylistUrl(input.value)
       if (data.status === 'success') {
-        openPlaylistSidebar('custom-url', 'Custom URL', data.tracks)
+        const plName = prompt('Enter a name for this saved playlist (leave blank to just play without saving):');
+        if (plName) {
+          let saved = JSON.parse(localStorage.getItem('savedPlaylists') || '[]');
+          saved.push({ id: input.value, name: plName, tracks: data.tracks });
+          localStorage.setItem('savedPlaylists', JSON.stringify(saved));
+        }
+        openPlaylistSidebar('custom-url', plName || 'Custom URL', data.tracks)
         inputDiv.remove()
+        menu.style.display = 'none'
       } else {
         btn.innerText = 'Err'
+        alert('Failed to fetch playlist: ' + data.message)
       }
     }
     
@@ -597,7 +693,9 @@ let appShortcuts = JSON.parse(localStorage.getItem('appShortcuts')) || {
   settings: 'CommandOrControl+Shift+S',
   playPause: 'CommandOrControl+Shift+ ',
   nextSong: 'CommandOrControl+Shift+ArrowRight',
-  prevSong: 'CommandOrControl+Shift+ArrowLeft'
+  prevSong: 'CommandOrControl+Shift+ArrowLeft',
+  loop: 'CommandOrControl+Shift+L',
+  shuffle: 'CommandOrControl+Shift+R'
 };
 
 // Upgrade old single-letter shortcuts from previous version
@@ -609,6 +707,8 @@ if (!appShortcuts.settings) appShortcuts.settings = 'CommandOrControl+Shift+S';
 if (!appShortcuts.playPause) appShortcuts.playPause = 'CommandOrControl+Shift+ ';
 if (!appShortcuts.nextSong) appShortcuts.nextSong = 'CommandOrControl+Shift+ArrowRight';
 if (!appShortcuts.prevSong) appShortcuts.prevSong = 'CommandOrControl+Shift+ArrowLeft';
+if (!appShortcuts.loop) appShortcuts.loop = 'CommandOrControl+Shift+L';
+if (!appShortcuts.shuffle) appShortcuts.shuffle = 'CommandOrControl+Shift+R';
 
 window.api.updateGlobalShortcut(appShortcuts.globalToggle);
 
@@ -619,7 +719,9 @@ const inputs = {
   settings: document.getElementById('shortcut-settings'),
   playPause: document.getElementById('shortcut-play'),
   nextSong: document.getElementById('shortcut-next'),
-  prevSong: document.getElementById('shortcut-prev')
+  prevSong: document.getElementById('shortcut-prev'),
+  loop: document.getElementById('shortcut-loop'),
+  shuffle: document.getElementById('shortcut-shuffle')
 };
 
 function formatDisplay(electronShortcut) {
@@ -654,6 +756,8 @@ function updateInputs() {
   if (inputs.playPause) inputs.playPause.value = formatDisplay(appShortcuts.playPause);
   if (inputs.nextSong) inputs.nextSong.value = formatDisplay(appShortcuts.nextSong);
   if (inputs.prevSong) inputs.prevSong.value = formatDisplay(appShortcuts.prevSong);
+  if (inputs.loop) inputs.loop.value = formatDisplay(appShortcuts.loop);
+  if (inputs.shuffle) inputs.shuffle.value = formatDisplay(appShortcuts.shuffle);
 }
 updateInputs();
 
@@ -683,18 +787,47 @@ function handleShortcutRecord(e, keyName) {
     
     updateInputs();
     e.target.blur();
+    
+    e.target.style.borderColor = 'var(--accent)';
+    e.target.style.background = 'rgba(74, 222, 128, 0.15)';
+    setTimeout(() => {
+      e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+      e.target.style.background = 'rgba(0,0,0,0.3)';
+    }, 400);
   } else {
     e.target.value = formatDisplay(keys.join('+')) + '...';
   }
 }
 
-if (inputs.globalToggle) inputs.globalToggle.addEventListener('keydown', (e) => handleShortcutRecord(e, 'globalToggle'));
-if (inputs.search) inputs.search.addEventListener('keydown', (e) => handleShortcutRecord(e, 'search'));
-if (inputs.gifPicker) inputs.gifPicker.addEventListener('keydown', (e) => handleShortcutRecord(e, 'gifPicker'));
-if (inputs.settings) inputs.settings.addEventListener('keydown', (e) => handleShortcutRecord(e, 'settings'));
-if (inputs.playPause) inputs.playPause.addEventListener('keydown', (e) => handleShortcutRecord(e, 'playPause'));
-if (inputs.nextSong) inputs.nextSong.addEventListener('keydown', (e) => handleShortcutRecord(e, 'nextSong'));
-if (inputs.prevSong) inputs.prevSong.addEventListener('keydown', (e) => handleShortcutRecord(e, 'prevSong'));
+function handleShortcutFocus(e) {
+  e.target.style.borderColor = 'var(--accent)';
+  e.target.style.background = 'rgba(255,255,255,0.05)';
+  e.target.value = 'Listening...';
+}
+
+function handleShortcutBlur(e) {
+  e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+  e.target.style.background = 'rgba(0,0,0,0.3)';
+  updateInputs();
+}
+
+function attachShortcutRecorders(inputsObj, keyName) {
+  if (inputsObj) {
+    inputsObj.addEventListener('keydown', (e) => handleShortcutRecord(e, keyName));
+    inputsObj.addEventListener('focus', handleShortcutFocus);
+    inputsObj.addEventListener('blur', handleShortcutBlur);
+  }
+}
+
+attachShortcutRecorders(inputs.globalToggle, 'globalToggle');
+attachShortcutRecorders(inputs.search, 'search');
+attachShortcutRecorders(inputs.gifPicker, 'gifPicker');
+attachShortcutRecorders(inputs.settings, 'settings');
+attachShortcutRecorders(inputs.playPause, 'playPause');
+attachShortcutRecorders(inputs.nextSong, 'nextSong');
+attachShortcutRecorders(inputs.prevSong, 'prevSong');
+attachShortcutRecorders(inputs.loop, 'loop');
+attachShortcutRecorders(inputs.shuffle, 'shuffle');
 
 if (searchBtn) searchBtn.addEventListener('click', toggleSearch)
 
@@ -769,6 +902,20 @@ if (window) window.addEventListener('keydown', (e) => {
       if (checkMatch(appShortcuts.prevSong)) {
         e.preventDefault();
         window.api.prevSong();
+      }
+      if (checkMatch(appShortcuts.loop)) {
+        e.preventDefault();
+        window.api.toggleLoop().then(looping => {
+          const btn = document.getElementById('btn-loop');
+          if (btn) btn.style.color = looping ? 'var(--accent)' : 'var(--text-muted)';
+        });
+      }
+      if (checkMatch(appShortcuts.shuffle)) {
+        e.preventDefault();
+        window.api.toggleShuffle().then(shuffling => {
+          const btn = document.getElementById('btn-shuffle');
+          if (btn) btn.style.color = shuffling ? 'var(--accent)' : 'var(--text-muted)';
+        });
       }
     }
   }
@@ -902,6 +1049,20 @@ window.api.onTrackError((event, errorMsg) => {
   document.getElementById('track-title').innerText = 'Search Failed'
   document.getElementById('track-artist').innerText = errorMsg
 })
+
+if (window.api && window.api.onLoopToggled) {
+  window.api.onLoopToggled((event, looping) => {
+    const btn = document.getElementById('btn-loop');
+    if (btn) btn.style.color = looping ? 'var(--accent)' : 'var(--text-muted)';
+  });
+}
+
+if (window.api && window.api.onShuffleToggled) {
+  window.api.onShuffleToggled((event, shuffling) => {
+    const btn = document.getElementById('btn-shuffle');
+    if (btn) btn.style.color = shuffling ? 'var(--accent)' : 'var(--text-muted)';
+  });
+}
 
 // Settings Logic
 const root = document.documentElement
