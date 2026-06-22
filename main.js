@@ -637,6 +637,9 @@ ipcMain.handle('fetch-playlist-url', async (event, url) => {
         let limit = 100
         let total = 100
         
+        const plInfo = await spotify.getPlaylist(playlistId)
+        const playlistName = plInfo.body.name || 'Saved Playlist'
+        
         while (offset < total) {
           const res = await spotify.getPlaylistTracks(playlistId, { offset, limit })
           total = res.body.total
@@ -653,7 +656,7 @@ ipcMain.handle('fetch-playlist-url', async (event, url) => {
           tracks = tracks.concat(chunk)
           offset += limit
         }
-        return { status: 'success', tracks }
+        return { status: 'success', tracks, playlistName }
       } catch (apiErr) {
         console.error('Official API failed, falling back to scraper...', apiErr.message)
         // If API fails, silently fall through to scraper
@@ -662,6 +665,9 @@ ipcMain.handle('fetch-playlist-url', async (event, url) => {
     
     // Fallback: spotify-url-info scraper (using pure node-fetch)
     const spotifyUrlInfoAPI = spotifyUrlInfo(nodeFetch)
+    const rawData = await spotifyUrlInfoAPI.getData(url).catch(() => null)
+    const playlistName = rawData?.name || rawData?.title || 'Saved Playlist'
+    
     const rawTracks = await spotifyUrlInfoAPI.getTracks(url)
     
     const tracks = rawTracks.map(t => ({
@@ -671,7 +677,7 @@ ipcMain.handle('fetch-playlist-url', async (event, url) => {
       duration_ms: t.duration || t.duration_ms || t.durationMs || 0
     }))
     
-    return { status: 'success', tracks }
+    return { status: 'success', tracks, playlistName }
   } catch (err) {
     console.error('fetch-playlist-url error:', err)
     let msg = err.message
@@ -817,6 +823,7 @@ ipcMain.handle('prev-song', async () => {
 
 ipcMain.handle('toggle-loop', () => {
   isLooping = !isLooping
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('loop-toggled', isLooping)
   return isLooping
 })
 
@@ -832,6 +839,7 @@ ipcMain.handle('toggle-shuffle', () => {
     const newlyAdded = playQueue.filter(track => !originalQueue.includes(track))
     playQueue = [...originalQueue.filter(track => playQueue.includes(track)), ...newlyAdded]
   }
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('shuffle-toggled', isShuffling)
   return isShuffling
 })
 

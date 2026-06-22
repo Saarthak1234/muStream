@@ -402,13 +402,13 @@ safeOn('btn-playlist', 'click', async (e) => {
       btn.innerText = '...'
       const data = await window.api.fetchPlaylistUrl(input.value)
       if (data.status === 'success') {
-        const plName = prompt('Enter a name for this saved playlist (leave blank to just play without saving):');
-        if (plName) {
-          let saved = JSON.parse(localStorage.getItem('savedPlaylists') || '[]');
+        const plName = data.playlistName || 'Saved Playlist';
+        let saved = JSON.parse(localStorage.getItem('savedPlaylists') || '[]');
+        if (!saved.find(s => s.id === input.value)) {
           saved.push({ id: input.value, name: plName, tracks: data.tracks });
           localStorage.setItem('savedPlaylists', JSON.stringify(saved));
         }
-        openPlaylistSidebar('custom-url', plName || 'Custom URL', data.tracks)
+        openPlaylistSidebar('custom-url', plName, data.tracks)
         inputDiv.remove()
         menu.style.display = 'none'
       } else {
