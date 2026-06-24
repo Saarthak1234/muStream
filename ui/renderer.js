@@ -710,8 +710,15 @@ if (!appShortcuts.prevSong) appShortcuts.prevSong = 'CommandOrControl+Shift+Arro
 if (!appShortcuts.loop) appShortcuts.loop = 'CommandOrControl+Shift+L';
 if (!appShortcuts.shuffle) appShortcuts.shuffle = 'CommandOrControl+Shift+R';
 
+let globalShortcutsEnabled = localStorage.getItem('globalShortcutsEnabled') !== 'false';
+
+function getGlobalShortcutPayload() {
+  if (globalShortcutsEnabled) return appShortcuts;
+  return { globalToggle: appShortcuts.globalToggle };
+}
+
 if (window.api && window.api.registerGlobalShortcuts) {
-  window.api.registerGlobalShortcuts(appShortcuts);
+  window.api.registerGlobalShortcuts(getGlobalShortcutPayload());
 }
 
 const inputs = {
@@ -725,6 +732,19 @@ const inputs = {
   loop: document.getElementById('shortcut-loop'),
   shuffle: document.getElementById('shortcut-shuffle')
 };
+
+const toggleGlobalShortcuts = document.getElementById('toggle-global-shortcuts');
+if (toggleGlobalShortcuts) {
+  toggleGlobalShortcuts.checked = globalShortcutsEnabled;
+  toggleGlobalShortcuts.addEventListener('change', (e) => {
+    globalShortcutsEnabled = e.target.checked;
+    localStorage.setItem('globalShortcutsEnabled', globalShortcutsEnabled);
+    updateInputs();
+    if (window.api && window.api.registerGlobalShortcuts) {
+      window.api.registerGlobalShortcuts(getGlobalShortcutPayload());
+    }
+  });
+}
 
 function formatDisplay(electronShortcut) {
   if (!electronShortcut) return '';
@@ -760,6 +780,13 @@ function updateInputs() {
   if (inputs.prevSong) inputs.prevSong.value = formatDisplay(appShortcuts.prevSong);
   if (inputs.loop) inputs.loop.value = formatDisplay(appShortcuts.loop);
   if (inputs.shuffle) inputs.shuffle.value = formatDisplay(appShortcuts.shuffle);
+
+  const spans = document.querySelectorAll('#tab-shortcuts span[style*="font-size: 11px"]');
+  spans.forEach(span => {
+    if (span.innerText.includes('Shortcut') && !span.closest('div').innerHTML.includes('Global Window Toggle')) {
+      span.innerText = globalShortcutsEnabled ? 'Global Shortcut' : 'In-App Shortcut';
+    }
+  });
 }
 updateInputs();
 
@@ -768,7 +795,15 @@ window.addEventListener('storage', (e) => {
     appShortcuts = JSON.parse(e.newValue);
     updateInputs();
     if (window.api && window.api.registerGlobalShortcuts) {
-      window.api.registerGlobalShortcuts(appShortcuts);
+      window.api.registerGlobalShortcuts(getGlobalShortcutPayload());
+    }
+  }
+  if (e.key === 'globalShortcutsEnabled' && e.newValue) {
+    globalShortcutsEnabled = e.newValue !== 'false';
+    if (toggleGlobalShortcuts) toggleGlobalShortcuts.checked = globalShortcutsEnabled;
+    updateInputs();
+    if (window.api && window.api.registerGlobalShortcuts) {
+      window.api.registerGlobalShortcuts(getGlobalShortcutPayload());
     }
   }
 });
@@ -796,7 +831,7 @@ function handleShortcutRecord(e, keyName) {
     localStorage.setItem('appShortcuts', JSON.stringify(appShortcuts));
     
     if (window.api && window.api.registerGlobalShortcuts) {
-      window.api.registerGlobalShortcuts(appShortcuts);
+      window.api.registerGlobalShortcuts(getGlobalShortcutPayload());
     }
     
     updateInputs();

@@ -256,9 +256,21 @@ app.whenReady().then(async () => {
   ipcMain.handle('register-global-shortcuts', (event, shortcuts) => {
     globalShortcut.unregisterAll();
     
-    if (shortcuts.globalToggle) {
+    const normalizeShortcut = (shortcutStr) => {
+      if (!shortcutStr) return null;
+      return shortcutStr
+        .replace(/\bArrowRight\b/g, 'Right')
+        .replace(/\bArrowLeft\b/g, 'Left')
+        .replace(/\bArrowUp\b/g, 'Up')
+        .replace(/\bArrowDown\b/g, 'Down')
+        .replace(/\+\s$/, '+Space')
+        .replace(/\+Spacebar$/, '+Space');
+    };
+
+    const normalizedGlobalToggle = normalizeShortcut(shortcuts.globalToggle);
+    if (normalizedGlobalToggle) {
       try {
-        globalShortcut.register(shortcuts.globalToggle, () => {
+        globalShortcut.register(normalizedGlobalToggle, () => {
           if (mainWindow) {
             if (mainWindow.isVisible() && mainWindow.isFocused()) {
               mainWindow.minimize()
@@ -274,9 +286,10 @@ app.whenReady().then(async () => {
     }
 
     const mapAction = (key, actionName) => {
-      if (shortcuts[key]) {
+      const normalized = normalizeShortcut(shortcuts[key]);
+      if (normalized) {
         try {
-          globalShortcut.register(shortcuts[key], () => {
+          globalShortcut.register(normalized, () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
               if (['search', 'settings', 'gifPicker'].includes(actionName)) {
                 mainWindow.show()
