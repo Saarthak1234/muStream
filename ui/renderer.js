@@ -761,6 +761,13 @@ function updateInputs() {
 }
 updateInputs();
 
+window.addEventListener('storage', (e) => {
+  if (e.key === 'appShortcuts' && e.newValue) {
+    appShortcuts = JSON.parse(e.newValue);
+    updateInputs();
+  }
+});
+
 function handleShortcutRecord(e, keyName) {
   e.preventDefault();
   if (e.key === 'Escape') {
@@ -776,7 +783,9 @@ function handleShortcutRecord(e, keyName) {
   const isModifier = ['Meta', 'Control', 'Shift', 'Alt'].includes(e.key);
   
   if (!isModifier) {
-    keys.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
+    let keyChar = e.key;
+    if (keyChar === ' ') keyChar = 'Space';
+    keys.push(keyChar.length === 1 ? keyChar.toUpperCase() : keyChar);
     const newShortcut = keys.join('+');
     appShortcuts[keyName] = newShortcut;
     localStorage.setItem('appShortcuts', JSON.stringify(appShortcuts));
@@ -846,14 +855,17 @@ if (window) window.addEventListener('keydown', (e) => {
   const isTyping = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable;
 
   if (!isTyping) {
-    // ── Playback controls ──────────────────────────────────────────────
-    if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'MediaPlayPause') {
+    const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+    const hasModifiers = isCmdOrCtrl || e.shiftKey || e.altKey;
+
+    // ── Playback controls (Unmodified keys only) ───────────────────────
+    if (!hasModifiers && (e.key === ' ' || e.key === 'Spacebar' || e.key === 'MediaPlayPause')) {
       e.preventDefault(); // prevent page scroll on space
       window.api.togglePlay();
-    } else if (e.key === 'ArrowRight' || e.key === 'MediaTrackNext') {
+    } else if (!hasModifiers && (e.key === 'ArrowRight' || e.key === 'MediaTrackNext')) {
       e.preventDefault();
       window.api.nextSong();
-    } else if (e.key === 'ArrowLeft' || e.key === 'MediaTrackPrevious') {
+    } else if (!hasModifiers && (e.key === 'ArrowLeft' || e.key === 'MediaTrackPrevious')) {
       e.preventDefault();
       window.api.prevSong();
     }
@@ -861,8 +873,8 @@ if (window) window.addEventListener('keydown', (e) => {
 
     // Custom configurable shortcuts (search, gif picker, etc.)
     if (!e.target.classList.contains('shortcut-recorder')) {
-      const pressedKey = e.key.toUpperCase();
-      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      let pressedKey = e.key.toUpperCase();
+      if (pressedKey === ' ') pressedKey = 'SPACE';
 
       const checkMatch = (shortcutConfig) => {
         if (!shortcutConfig) return false;
@@ -870,7 +882,9 @@ if (window) window.addEventListener('keydown', (e) => {
         const requiresCmd = parts.includes('CommandOrControl') || parts.includes('Command') || parts.includes('Control');
         const requiresShift = parts.includes('Shift');
         const requiresAlt = parts.includes('Alt');
-        const letter = parts[parts.length - 1].toUpperCase();
+        let letter = parts[parts.length - 1].toUpperCase();
+        if (letter === ' ') letter = 'SPACE';
+        
         return (
           isCmdOrCtrl === requiresCmd &&
           e.shiftKey === requiresShift &&
