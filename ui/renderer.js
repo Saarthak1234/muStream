@@ -1191,6 +1191,11 @@ document.querySelectorAll('.theme-card').forEach(card => {
       root.style.setProperty('--text-muted', `rgba(255, 255, 255, 0.5)`)
     }
 
+    const themeNameStr = target.querySelector('.theme-info span:first-child')?.innerText;
+    if (themeNameStr) {
+      localStorage.setItem('activeThemeName', themeNameStr);
+    }
+
     if (typeof broadcastThemeVars === 'function') {
       broadcastThemeVars();
     }
@@ -1548,6 +1553,23 @@ if (saveThemeBtn) saveThemeBtn.addEventListener('click', async () => {
 // Load saved custom themes on startup
 window.api.loadCustomThemes().then(themes => {
   themes.forEach(theme => injectThemeCard(theme, true))
+  
+  // Restore active theme UI state
+  const activeName = localStorage.getItem('activeThemeName');
+  if (activeName) {
+    document.querySelectorAll('.theme-card').forEach(card => {
+      const span = card.querySelector('.theme-info span:first-child');
+      if (span && span.innerText === activeName) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+  } else {
+    // Default fallback to first theme
+    const firstCard = document.querySelector('.theme-card');
+    if (firstCard) firstCard.classList.add('active');
+  }
 })
 
 // Custom GIF Settings Logic
