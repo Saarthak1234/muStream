@@ -20,6 +20,8 @@
     "build:cli:all": "bun build ./bin/musync.js --compile --target bun-darwin-x64 --outfile dist/trak-mac-intel && bun build ./bin/musync.js --compile --target bun-darwin-arm64 --outfile dist/trak-mac-arm && bun build ./bin/musync.js --compile --target bun-windows-x64 --outfile dist/trak-windows.exe && bun build ./bin/musync.js --compile --target bun-linux-x64 --outfile dist/trak-linux",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
+    "build:mac:intel": "electron-builder --mac --x64",
+    "build:mac:universal": "electron-builder --mac --universal",
     "build:linux": "electron-builder --linux",
     "build:app:all": "electron-builder -mwl"
   },
@@ -39,9 +41,11 @@
     "node-pty": "^1.1.0",
     "open": "^11.0.0",
     "ora": "^8.0.0",
+    "play-dl": "^1.9.7",
     "spotify-uri": "^4.1.0",
     "spotify-url-info": "^3.3.0",
     "spotify-web-api-node": "^5.0.2",
+    "youtube-dl-exec": "^3.1.8",
     "yt-dlp-wrap": "^2.3.12"
   },
   "devDependencies": {
