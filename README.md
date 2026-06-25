@@ -1,98 +1,66 @@
 # Trak
 
-Trak is a beautiful, modern Electron Desktop Application that allows you to stream your Spotify playlists completely free by sourcing the official audio directly from YouTube. Say goodbye to Spotify ads and premium limitations.
+Trak is a beautiful, modern Electron Desktop Application that allows you to stream music completely free by sourcing the official audio directly from YouTube. Say goodbye to ads and premium limitations.
 
-Featuring a sleek Glassmorphism UI, Trak gives you total control of your playback securely and privately.
-
-## Features
-
-- **Beautiful Desktop Interface:** A modern, premium UI featuring dark mode aesthetics, smooth glassmorphism effects, dynamic layout, and fluid animations.
-- **Spotify Integration:** Connect your own Spotify Developer App to securely fetch, browse, and play your private playlists directly from your library.
-- **Zero-Setup Playback Backend:** Trak uses `yt-dlp` and `node-mpv` under the hood to stream high-quality audio silently, handling network reconnects and throttling automatically.
-- **Advanced Queue Management:**
-  - Drag-and-drop your "Up Next" queue to easily reorder upcoming tracks.
-  - Remove tracks, clear the queue, or seamlessly append new playlists.
-  - Dedicated "Queue Mode" lets you seamlessly modify double-click behaviors for advanced queue control.
-- **Expandable Search:** Instantly search for any custom song and start streaming it immediately.
-- **Robust Audio Controls:** Real-time synchronized playback tracking, volume slider, next/previous skip controls, and play/pause functionality.
+Featuring a sleek Glassmorphism UI, Trak gives you total control of your playback securely and privately, with or without a Spotify account.
 
 ---
 
-## Download & Install
+## 🚀 Installation
 
-> **Trak automatically detects and offers to install `mpv` and `yt-dlp` on first launch** using your system's package manager (Homebrew, apt, Scoop, winget, etc.). No manual setup required in most cases.
+### macOS (Recommended: Homebrew)
+Apple's Gatekeeper often blocks indie apps from opening. To **completely bypass** the "Damaged App" error and install seamlessly, use Homebrew:
+```bash
+brew install --cask https://raw.githubusercontent.com/Saarthak1234/trak/main/trak.rb
+```
 
-### macOS
-Download the latest `.dmg` from the [Releases page](https://github.com/Saarthak1234/Trak/releases/latest) and drag the app to your Applications folder.
+### macOS (Manual Download)
+1. Download the latest `.zip` release from the [Releases page](https://github.com/Saarthak1234/trak/releases). *(Use the `.zip` instead of `.dmg` to avoid extraction bugs).*
+2. Unzip and drag `Trak.app` to your Applications folder.
+3. **Important:** Do not double-click! **Right-Click** (or Control+Click) `Trak.app` and select **Open**. Click "Open Anyway" to bypass Apple's security warning.
 
 ### Windows
-**Download and install (PowerShell — run each line separately):**
+Download the `.exe` installer from the Releases page or run this in PowerShell:
 ```powershell
-curl.exe -L "https://github.com/Saarthak1234/Trak/releases/latest/download/Trak.Setup.1.1.15.exe" -o "$env:USERPROFILE\Downloads\Trak-Setup.exe"
+curl.exe -L "https://github.com/Saarthak1234/trak/releases/latest/download/Trak.Setup.1.1.16.exe" -o "$env:USERPROFILE\Downloads\Trak-Setup.exe"
 Start-Process "$env:USERPROFILE\Downloads\Trak-Setup.exe"
 ```
-> If Windows shows a SmartScreen warning, click **"More info" → "Run anyway"**. This is expected since the app is not commercially code-signed.
+*(If SmartScreen blocks it, click "More info" → "Run anyway")*
 
 ### Linux
-**AppImage** (works on any distro, no install required):
+Download the **AppImage** from the Releases page:
 ```bash
-curl -L "https://github.com/Saarthak1234/Trak/releases/latest/download/Trak-1.1.15.AppImage" -o ~/Trak.AppImage && chmod +x ~/Trak.AppImage && ~/Trak.AppImage
-```
-
-**Debian / Ubuntu (.deb):**
-```bash
-curl -L "https://github.com/Saarthak1234/Trak/releases/latest/download/trak_1.1.15_amd64.deb" -o /tmp/trak.deb && sudo dpkg -i /tmp/trak.deb
-```
-
-> **Note for maintainers:** Update the version numbers above whenever a new release is cut.
-
----
-
-## Dependencies
-
-Trak needs `mpv` and `yt-dlp` to stream audio. **These are installed automatically on first launch** via a native dialog.
-
-If the auto-install fails or you prefer to install them manually:
-
-**macOS:**
-```bash
-brew install yt-dlp mpv
-```
-
-**Linux (Debian/Ubuntu):**
-```bash
-sudo apt install yt-dlp mpv
-```
-
-**Windows** — Install via [Scoop](https://scoop.sh/) (recommended):
-```powershell
-# 1. Install Scoop (if not already installed)
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-# 2. Install dependencies
-scoop install mpv yt-dlp
-```
-> Note: `mpv` is **not** available via winget. Scoop is the easiest option on Windows.
-Or download them manually and add to your system `PATH`:
-- [yt-dlp releases](https://github.com/yt-dlp/yt-dlp/releases)
-- [mpv for Windows](https://mpv.io/installation/)
-
----
-
-## Build From Source
-
-Ensure you have [Node.js](https://nodejs.org) (v18+) and [npm](https://npmjs.com) installed.
-
-```bash
-git clone https://github.com/Saarthak1234/Trak.git
-cd Trak
-npm install
-npm run start:electron
+curl -L "https://github.com/Saarthak1234/trak/releases/latest/download/Trak-1.1.16.AppImage" -o ~/Trak.AppImage && chmod +x ~/Trak.AppImage && ~/Trak.AppImage
 ```
 
 ---
 
-## How to Connect Spotify
+## ✨ Core Features (No Login Required)
+Trak works out of the box immediately. You don't need to sign in to anything to use these core features:
+
+- **Universal Search & Play:** Click the Search icon at the bottom to find and instantly play any song, album, or artist directly from YouTube.
+- **Global Keyboard Shortcuts:** Control your music from *anywhere*.
+  - Use shortcuts (like `Cmd+Shift+Right`) to skip tracks, pause, or toggle shuffle while using other apps.
+  - Press `Cmd+Shift+M` to instantly pop up the Trak window over any other application.
+  - *Note: Global shortcut capture can be easily toggled off in the Settings menu if you prefer in-app only shortcuts.*
+- **Stunning UI Customization:** Make Trak yours.
+  - **Glassmorphism:** A modern, frosted-glass UI that blurs what's behind it.
+  - **Custom Themes & Colors:** Use the built-in color picker to set dynamic accent colors.
+  - **Animated Backgrounds:** Upload custom animated GIFs to play dynamically behind the frosted glass.
+  - **Opacity Sliders:** Dial in the exact transparency and blur of the window background.
+
+---
+
+## 🎵 Spotify Integration
+Want to bring your existing library over? Trak can securely connect to your Spotify account to fetch your playlists.
+
+- **Import Playlists:** Browse and load your private and public Spotify playlists directly in the sidebar.
+- **Advanced Queue Management:** Drag-and-drop your "Up Next" queue, seamlessly append new playlists, or clear the queue on the fly.
+- **Secure Local Auth:** Authentication happens entirely on your local machine using your own Developer API keys.
+
+---
+
+## ⚙️ How to Connect Spotify
 
 To fetch your playlists, you must connect your own Spotify Developer App.
 
@@ -103,27 +71,32 @@ To fetch your playlists, you must connect your own Spotify Developer App.
 5. Check the box for "Web API", accept the terms, and click **Save**.
 6. On your app's dashboard, click **Settings**.
 7. Copy your **Client ID** and **Client Secret**.
-8. Launch Trak — upon loading you will be prompted to connect to Spotify. Trak securely handles the OAuth 2.0 authentication process locally.
+8. Open the **Settings** menu in Trak, click "Login to Spotify", and enter your keys (or click "Get Credentials?" in the app to open the dashboard directly).
 
 ---
 
-## UI Navigation
+## 🔧 Dependencies
 
-- **Playlist Sidebar:** Open the side menu to view all your Spotify playlists. Double-click any playlist to load its tracks.
-- **Track List:**
-  - *Single Click:* Highlight a track.
-  - *Double Click:* Immediately play the track and queue all subsequent songs.
-  - *Add Button (+):* Click the plus button on any track row to silently add it to the end of your queue.
-- **Queue Sidebar:** View your "Up Next" list, reorder songs by dragging the handles, or remove songs you don't want to hear.
-- **Search Bar:** Click the search icon in the bottom right to dynamically expand the search field and find individual songs.
+Trak relies on `mpv` and `yt-dlp` to fetch and stream audio without ads. 
+**Trak will automatically prompt you to install these on first launch** using your system's package manager (Homebrew, apt, Scoop).
+
+If the auto-install fails, you can install them manually:
+- **macOS:** `brew install yt-dlp mpv`
+- **Linux:** `sudo apt install yt-dlp mpv`
+- **Windows:** Use Scoop (`scoop install mpv yt-dlp`)
 
 ---
 
-## How It Works
-1. Trak uses the official Spotify API via your developer credentials to fetch your library and extract track names.
-2. It passes the track titles and artist names to `yt-dlp`, which does a fast query for the official audio stream URL on YouTube.
-3. `mpv` via the `node-mpv` IPC interface streams the audio URL silently in the background.
-4. Trak's Electron frontend communicates with the Node.js backend using secure IPC messages to maintain a perfectly synchronized UI.
+## 🛠 Build From Source
+
+Ensure you have [Node.js](https://nodejs.org) (v18+) and [npm](https://npmjs.com) installed.
+
+```bash
+git clone https://github.com/Saarthak1234/trak.git
+cd trak
+npm install
+npm run start:electron
+```
 
 ---
 
