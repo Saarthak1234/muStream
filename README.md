@@ -2,11 +2,13 @@
 
 Trak is a beautiful, modern Electron Desktop Application that allows you to stream music completely free by sourcing the official audio directly from YouTube. Say goodbye to ads and premium limitations.
 
+**Note: Trak is currently only available for macOS.**
+
 Featuring a sleek Glassmorphism UI, Trak gives you total control of your playback securely and privately, with or without a Spotify account.
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### macOS (Recommended: Homebrew)
 Apple's Gatekeeper often blocks indie apps from opening. To **completely bypass** the "Damaged App" error and install all required dependencies automatically, use Homebrew:
@@ -19,23 +21,9 @@ brew install saarthak1234/trak/trak
 2. Unzip and drag `Trak.app` to your Applications folder.
 3. **Important:** Do not double-click! **Right-Click** (or Control+Click) `Trak.app` and select **Open**. Click "Open Anyway" to bypass Apple's security warning.
 
-### Windows
-Download the `.exe` installer from the Releases page or run this in PowerShell:
-```powershell
-curl.exe -L "https://github.com/Saarthak1234/trak/releases/latest/download/Trak.Setup.1.1.16.exe" -o "$env:USERPROFILE\Downloads\Trak-Setup.exe"
-Start-Process "$env:USERPROFILE\Downloads\Trak-Setup.exe"
-```
-*(If SmartScreen blocks it, click "More info" → "Run anyway")*
-
-### Linux
-Download the **AppImage** from the Releases page:
-```bash
-curl -L "https://github.com/Saarthak1234/trak/releases/latest/download/Trak-1.1.16.AppImage" -o ~/Trak.AppImage && chmod +x ~/Trak.AppImage && ~/Trak.AppImage
-```
-
 ---
 
-## ✨ Core Features (No Login Required)
+## Core Features (No Login Required)
 Trak works out of the box immediately. You don't need to sign in to anything to use these core features:
 
 - **Universal Search & Play:** Click the Search icon at the bottom to find and instantly play any song, album, or artist directly from YouTube.
@@ -51,7 +39,7 @@ Trak works out of the box immediately. You don't need to sign in to anything to 
 
 ---
 
-## 🎵 Spotify Integration
+## Spotify Integration
 Want to bring your existing library over? Trak can securely connect to your Spotify account to fetch your playlists.
 
 - **Import Playlists:** Browse and load your private and public Spotify playlists directly in the sidebar.
@@ -60,7 +48,7 @@ Want to bring your existing library over? Trak can securely connect to your Spot
 
 ---
 
-## ⚙️ How to Connect Spotify
+## How to Connect Spotify
 
 To fetch your playlists, you must connect your own Spotify Developer App.
 
@@ -75,19 +63,17 @@ To fetch your playlists, you must connect your own Spotify Developer App.
 
 ---
 
-## 🔧 Dependencies
+## Dependencies
 
 Trak relies on `mpv` and `yt-dlp` to fetch and stream audio without ads. 
 **Trak will automatically prompt you to install these on first launch** using your system's package manager (Homebrew, apt, Scoop).
 
 If the auto-install fails, you can install them manually:
 - **macOS:** `brew install yt-dlp mpv`
-- **Linux:** `sudo apt install yt-dlp mpv`
-- **Windows:** Use Scoop (`scoop install mpv yt-dlp`)
 
 ---
 
-## 🛠 Build From Source
+## Build From Source
 
 Ensure you have [Node.js](https://nodejs.org) (v18+) and [npm](https://npmjs.com) installed.
 
@@ -97,6 +83,12 @@ cd trak
 npm install
 npm run start:electron
 ```
+
+## Credits & Attribution
+
+Trak was designed and solely developed as a passion project by **Saarthak Agarwal**. 
+
+This project is completely open-source and free for anyone to use, learn from, or fork! If you do use pieces of this codebase for your own projects, a small shoutout or link back to this repository would be greatly appreciated.
 
 ---
 
